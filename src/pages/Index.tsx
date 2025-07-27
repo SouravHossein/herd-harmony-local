@@ -1,13 +1,46 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React, { useState, useEffect } from 'react';
+import { GoatProvider } from '@/context/GoatContext';
+import { Layout } from '@/components/Layout';
+import { Dashboard } from '@/components/Dashboard';
+import { GoatManagement } from '@/components/GoatManagement';
+import { DataManagement } from '@/components/DataManagement';
+import { WeightTracking } from '@/components/WeightTracking';
+import { HealthRecords } from '@/components/HealthRecords';
+import { loadSampleData } from '@/data/sampleData';
 
 const Index = () => {
+  const [currentPage, setCurrentPage] = useState('dashboard');
+
+  useEffect(() => {
+    // Load sample data on first visit
+    loadSampleData();
+  }, []);
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'goats':
+        return <GoatManagement />;
+      case 'weight':
+        return <WeightTracking />;
+      case 'health':
+        return <HealthRecords />;
+      case 'export':
+      case 'import':
+      case 'settings':
+        return <DataManagement />;
+      default:
+        return <Dashboard />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <GoatProvider>
+      <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
+        {renderPage()}
+      </Layout>
+    </GoatProvider>
   );
 };
 

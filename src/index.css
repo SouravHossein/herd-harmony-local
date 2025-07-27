@@ -2,41 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Farm-inspired design system with earthy, natural colors */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Base colors - warm, natural palette */
+    --background: 45 20% 98%;
+    --foreground: 25 15% 15%;
 
+    /* Cards with subtle warmth */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 25 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 25 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - sage green for farm theme */
+    --primary: 120 25% 35%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 120 35% 45%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - warm earth tone */
+    --secondary: 35 25% 88%;
+    --secondary-foreground: 25 15% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted tones */
+    --muted: 35 15% 92%;
+    --muted-foreground: 25 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - warm orange for highlights */
+    --accent: 25 85% 65%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Success green for healthy status */
+    --success: 120 60% 50%;
+    --success-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Warning for medical alerts */
+    --warning: 45 100% 60%;
+    --warning-foreground: 25 15% 15%;
 
-    --radius: 0.5rem;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders and inputs with earthy tone */
+    --border: 35 20% 85%;
+    --input: 35 20% 90%;
+    --ring: 120 25% 35%;
+
+    /* Gradients for farm aesthetics */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-warm: linear-gradient(180deg, hsl(45 30% 95%), hsl(35 25% 92%));
+    --gradient-earth: linear-gradient(135deg, hsl(25 30% 85%), hsl(35 35% 80%));
+
+    /* Shadows with warmth */
+    --shadow-soft: 0 4px 20px -4px hsl(25 15% 15% / 0.1);
+    --shadow-card: 0 2px 12px -2px hsl(25 15% 15% / 0.08);
+    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.2);
+
+    /* Animation timings */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
