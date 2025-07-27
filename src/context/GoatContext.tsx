@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { Goat, WeightRecord, HealthRecord, BreedingRecord, FarmStats } from '@/types/goat';
-import { useGoatData } from '@/hooks/useLocalStorage';
+import { useGoatData } from '@/hooks/useDatabase';
 import { generateId } from '@/lib/utils';
 
 interface GoatContextType {
@@ -11,21 +11,21 @@ interface GoatContextType {
   breedingRecords: BreedingRecord[];
   
   // Actions
-  addGoat: (goat: Omit<Goat, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateGoat: (id: string, updates: Partial<Goat>) => void;
-  deleteGoat: (id: string) => void;
+  addGoat: (goat: Omit<Goat, 'id' | 'createdAt' | 'updatedAt'>) => Promise<any>;
+  updateGoat: (id: string, updates: Partial<Goat>) => Promise<any>;
+  deleteGoat: (id: string) => Promise<boolean>;
   
-  addWeightRecord: (record: Omit<WeightRecord, 'id'>) => void;
-  updateWeightRecord: (id: string, updates: Partial<WeightRecord>) => void;
-  deleteWeightRecord: (id: string) => void;
+  addWeightRecord: (record: Omit<WeightRecord, 'id'>) => Promise<any>;
+  updateWeightRecord: (id: string, updates: Partial<WeightRecord>) => Promise<any>;
+  deleteWeightRecord: (id: string) => Promise<boolean>;
   
-  addHealthRecord: (record: Omit<HealthRecord, 'id'>) => void;
-  updateHealthRecord: (id: string, updates: Partial<HealthRecord>) => void;
-  deleteHealthRecord: (id: string) => void;
+  addHealthRecord: (record: Omit<HealthRecord, 'id'>) => Promise<any>;
+  updateHealthRecord: (id: string, updates: Partial<HealthRecord>) => Promise<any>;
+  deleteHealthRecord: (id: string) => Promise<boolean>;
   
-  addBreedingRecord: (record: Omit<BreedingRecord, 'id'>) => void;
-  updateBreedingRecord: (id: string, updates: Partial<BreedingRecord>) => void;
-  deleteBreedingRecord: (id: string) => void;
+  addBreedingRecord: (record: Omit<BreedingRecord, 'id'>) => Promise<any>;
+  updateBreedingRecord: (id: string, updates: Partial<BreedingRecord>) => Promise<any>;
+  deleteBreedingRecord: (id: string) => Promise<boolean>;
   
   // Computed data
   getFarmStats: () => FarmStats;
@@ -34,9 +34,9 @@ interface GoatContextType {
   getUpcomingHealthReminders: () => HealthRecord[];
   
   // Data management
-  exportData: () => string;
-  importData: (jsonData: string) => boolean;
-  clearAllData: () => void;
+  exportData: () => Promise<string>;
+  importData: (jsonData: string) => Promise<boolean>;
+  clearAllData: () => Promise<boolean>;
 }
 
 const GoatContext = createContext<GoatContextType | undefined>(undefined);
@@ -51,89 +51,171 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     setHealthRecords,
     breedingRecords,
     setBreedingRecords,
+    loading,
+    // Electron operations
+    addGoat: dbAddGoat,
+    updateGoat: dbUpdateGoat,
+    deleteGoat: dbDeleteGoat,
+    addWeightRecord: dbAddWeightRecord,
+    updateWeightRecord: dbUpdateWeightRecord,
+    deleteWeightRecord: dbDeleteWeightRecord,
+    addHealthRecord: dbAddHealthRecord,
+    updateHealthRecord: dbUpdateHealthRecord,
+    deleteHealthRecord: dbDeleteHealthRecord,
+    addBreedingRecord: dbAddBreedingRecord,
+    updateBreedingRecord: dbUpdateBreedingRecord,
+    deleteBreedingRecord: dbDeleteBreedingRecord,
+    exportData: dbExportData,
+    importData: dbImportData,
+    clearAll: dbClearAll,
   } = useGoatData();
 
+  // Check if we're in Electron
+  const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
+
   // Goat management
-  const addGoat = (goatData: Omit<Goat, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newGoat: Goat = {
-      ...goatData,
-      id: generateId(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setGoats((prev: Goat[]) => [...prev, newGoat]);
+  const addGoat = async (goatData: Omit<Goat, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (isElectron) {
+      const goatWithDates = {
+        ...goatData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      return await dbAddGoat(goatWithDates);
+    } else {
+      const newGoat: Goat = {
+        ...goatData,
+        id: generateId(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      setGoats((prev: Goat[]) => [...prev, newGoat]);
+      return newGoat;
+    }
   };
 
-  const updateGoat = (id: string, updates: Partial<Goat>) => {
-    setGoats((prev: Goat[]) =>
-      prev.map((goat) =>
-        goat.id === id ? { ...goat, ...updates, updatedAt: new Date() } : goat
-      )
-    );
+  const updateGoat = async (id: string, updates: Partial<Goat>) => {
+    if (isElectron) {
+      const updatesWithDate = { ...updates, updatedAt: new Date() };
+      return await dbUpdateGoat(id, updatesWithDate);
+    } else {
+      setGoats((prev: Goat[]) =>
+        prev.map((goat) =>
+          goat.id === id ? { ...goat, ...updates, updatedAt: new Date() } : goat
+        )
+      );
+    }
   };
 
-  const deleteGoat = (id: string) => {
-    setGoats((prev: Goat[]) => prev.filter((goat) => goat.id !== id));
-    // Also clean up related records
-    setWeightRecords((prev: WeightRecord[]) => prev.filter((record) => record.goatId !== id));
-    setHealthRecords((prev: HealthRecord[]) => prev.filter((record) => record.goatId !== id));
+  const deleteGoat = async (id: string) => {
+    if (isElectron) {
+      return await dbDeleteGoat(id);
+    } else {
+      setGoats((prev: Goat[]) => prev.filter((goat) => goat.id !== id));
+      // Also clean up related records
+      setWeightRecords((prev: WeightRecord[]) => prev.filter((record) => record.goatId !== id));
+      setHealthRecords((prev: HealthRecord[]) => prev.filter((record) => record.goatId !== id));
+      return true;
+    }
   };
 
   // Weight record management
-  const addWeightRecord = (recordData: Omit<WeightRecord, 'id'>) => {
-    const newRecord: WeightRecord = {
-      ...recordData,
-      id: generateId(),
-    };
-    setWeightRecords((prev: WeightRecord[]) => [...prev, newRecord]);
+  const addWeightRecord = async (recordData: Omit<WeightRecord, 'id'>) => {
+    if (isElectron) {
+      return await dbAddWeightRecord(recordData);
+    } else {
+      const newRecord: WeightRecord = {
+        ...recordData,
+        id: generateId(),
+      };
+      setWeightRecords((prev: WeightRecord[]) => [...prev, newRecord]);
+      return newRecord;
+    }
   };
 
-  const updateWeightRecord = (id: string, updates: Partial<WeightRecord>) => {
-    setWeightRecords((prev: WeightRecord[]) =>
-      prev.map((record) => (record.id === id ? { ...record, ...updates } : record))
-    );
+  const updateWeightRecord = async (id: string, updates: Partial<WeightRecord>) => {
+    if (isElectron) {
+      return await dbUpdateWeightRecord(id, updates);
+    } else {
+      setWeightRecords((prev: WeightRecord[]) =>
+        prev.map((record) => (record.id === id ? { ...record, ...updates } : record))
+      );
+    }
   };
 
-  const deleteWeightRecord = (id: string) => {
-    setWeightRecords((prev: WeightRecord[]) => prev.filter((record) => record.id !== id));
+  const deleteWeightRecord = async (id: string) => {
+    if (isElectron) {
+      return await dbDeleteWeightRecord(id);
+    } else {
+      setWeightRecords((prev: WeightRecord[]) => prev.filter((record) => record.id !== id));
+      return true;
+    }
   };
 
   // Health record management
-  const addHealthRecord = (recordData: Omit<HealthRecord, 'id'>) => {
-    const newRecord: HealthRecord = {
-      ...recordData,
-      id: generateId(),
-    };
-    setHealthRecords((prev: HealthRecord[]) => [...prev, newRecord]);
+  const addHealthRecord = async (recordData: Omit<HealthRecord, 'id'>) => {
+    if (isElectron) {
+      return await dbAddHealthRecord(recordData);
+    } else {
+      const newRecord: HealthRecord = {
+        ...recordData,
+        id: generateId(),
+      };
+      setHealthRecords((prev: HealthRecord[]) => [...prev, newRecord]);
+      return newRecord;
+    }
   };
 
-  const updateHealthRecord = (id: string, updates: Partial<HealthRecord>) => {
-    setHealthRecords((prev: HealthRecord[]) =>
-      prev.map((record) => (record.id === id ? { ...record, ...updates } : record))
-    );
+  const updateHealthRecord = async (id: string, updates: Partial<HealthRecord>) => {
+    if (isElectron) {
+      return await dbUpdateHealthRecord(id, updates);
+    } else {
+      setHealthRecords((prev: HealthRecord[]) =>
+        prev.map((record) => (record.id === id ? { ...record, ...updates } : record))
+      );
+    }
   };
 
-  const deleteHealthRecord = (id: string) => {
-    setHealthRecords((prev: HealthRecord[]) => prev.filter((record) => record.id !== id));
+  const deleteHealthRecord = async (id: string) => {
+    if (isElectron) {
+      return await dbDeleteHealthRecord(id);
+    } else {
+      setHealthRecords((prev: HealthRecord[]) => prev.filter((record) => record.id !== id));
+      return true;
+    }
   };
 
   // Breeding record management
-  const addBreedingRecord = (recordData: Omit<BreedingRecord, 'id'>) => {
-    const newRecord: BreedingRecord = {
-      ...recordData,
-      id: generateId(),
-    };
-    setBreedingRecords((prev: BreedingRecord[]) => [...prev, newRecord]);
+  const addBreedingRecord = async (recordData: Omit<BreedingRecord, 'id'>) => {
+    if (isElectron) {
+      return await dbAddBreedingRecord(recordData);
+    } else {
+      const newRecord: BreedingRecord = {
+        ...recordData,
+        id: generateId(),
+      };
+      setBreedingRecords((prev: BreedingRecord[]) => [...prev, newRecord]);
+      return newRecord;
+    }
   };
 
-  const updateBreedingRecord = (id: string, updates: Partial<BreedingRecord>) => {
-    setBreedingRecords((prev: BreedingRecord[]) =>
-      prev.map((record) => (record.id === id ? { ...record, ...updates } : record))
-    );
+  const updateBreedingRecord = async (id: string, updates: Partial<BreedingRecord>) => {
+    if (isElectron) {
+      return await dbUpdateBreedingRecord(id, updates);
+    } else {
+      setBreedingRecords((prev: BreedingRecord[]) =>
+        prev.map((record) => (record.id === id ? { ...record, ...updates } : record))
+      );
+    }
   };
 
-  const deleteBreedingRecord = (id: string) => {
-    setBreedingRecords((prev: BreedingRecord[]) => prev.filter((record) => record.id !== id));
+  const deleteBreedingRecord = async (id: string) => {
+    if (isElectron) {
+      return await dbDeleteBreedingRecord(id);
+    } else {
+      setBreedingRecords((prev: BreedingRecord[]) => prev.filter((record) => record.id !== id));
+      return true;
+    }
   };
 
   // Computed data functions
@@ -194,19 +276,24 @@ export function GoatProvider({ children }: { children: ReactNode }) {
   };
 
   // Data management
-  const exportData = (): string => {
-    const data = {
-      goats,
-      weightRecords,
-      healthRecords,
-      breedingRecords,
-      exportDate: new Date().toISOString(),
-      version: '1.0',
-    };
-    return JSON.stringify(data, null, 2);
+  const exportData = async (): Promise<string> => {
+    if (isElectron) {
+      const data = await dbExportData();
+      return JSON.stringify(data, null, 2);
+    } else {
+      const data = {
+        goats,
+        weightRecords,
+        healthRecords,
+        breedingRecords,
+        exportDate: new Date().toISOString(),
+        version: '1.0',
+      };
+      return JSON.stringify(data, null, 2);
+    }
   };
 
-  const importData = (jsonData: string): boolean => {
+  const importData = async (jsonData: string): Promise<boolean> => {
     try {
       const data = JSON.parse(jsonData);
       
@@ -215,23 +302,31 @@ export function GoatProvider({ children }: { children: ReactNode }) {
         throw new Error('Invalid data format: missing goats array');
       }
 
-      setGoats(data.goats || []);
-      setWeightRecords(data.weightRecords || []);
-      setHealthRecords(data.healthRecords || []);
-      setBreedingRecords(data.breedingRecords || []);
-      
-      return true;
+      if (isElectron) {
+        return await dbImportData(data);
+      } else {
+        setGoats(data.goats || []);
+        setWeightRecords(data.weightRecords || []);
+        setHealthRecords(data.healthRecords || []);
+        setBreedingRecords(data.breedingRecords || []);
+        return true;
+      }
     } catch (error) {
       console.error('Error importing data:', error);
       return false;
     }
   };
 
-  const clearAllData = () => {
-    setGoats([]);
-    setWeightRecords([]);
-    setHealthRecords([]);
-    setBreedingRecords([]);
+  const clearAllData = async () => {
+    if (isElectron) {
+      return await dbClearAll();
+    } else {
+      setGoats([]);
+      setWeightRecords([]);
+      setHealthRecords([]);
+      setBreedingRecords([]);
+      return true;
+    }
   };
 
   const value: GoatContextType = {

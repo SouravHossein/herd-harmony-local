@@ -34,9 +34,9 @@ export function DataManagement() {
 
   const stats = getFarmStats();
 
-  const handleExportData = () => {
+  const handleExportData = async () => {
     try {
-      const dataJson = exportData();
+      const dataJson = await exportData();
       const blob = new Blob([dataJson], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
@@ -66,10 +66,10 @@ export function DataManagement() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
-        const success = importData(content);
+        const success = await importData(content);
         
         if (success) {
           setImportStatus('success');
@@ -101,7 +101,7 @@ export function DataManagement() {
     reader.readAsText(file);
   };
 
-  const handleClearAllData = () => {
+  const handleClearAllData = async () => {
     const confirmation = confirm(
       'Are you sure you want to clear ALL farm data? This action cannot be undone. ' +
       'Make sure you have exported your data first if you want to keep it.'
@@ -114,14 +114,16 @@ export function DataManagement() {
       );
       
       if (doubleConfirmation) {
-        clearAllData();
-        setImportStatus('idle');
-        setImportMessage('');
-        toast({
-          title: "Data Cleared",
-          description: "All farm data has been cleared.",
-          variant: "destructive",
-        });
+        const success = await clearAllData();
+        if (success) {
+          setImportStatus('idle');
+          setImportMessage('');
+          toast({
+            title: "Data Cleared",
+            description: "All farm data has been cleared.",
+            variant: "destructive",
+          });
+        }
       }
     }
   };
