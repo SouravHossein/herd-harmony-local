@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
-import ReactFlow, { Node, Edge, Controls, Background } from 'reactflow';
-import { PedigreeNode } from './PedigreeNode';
+import ReactFlow, { Node, Edge, Controls, Background, BackgroundVariant } from 'reactflow';
+import  PedigreeNode  from './PedigreeNode';
 import { Goat } from '@/types/goat';
 
 const nodeTypes = {
@@ -57,7 +57,7 @@ export const PedigreeTree: React.FC<PedigreeTreeProps> = ({
         attributionPosition="bottom-left"
       >
         <Controls />
-        <Background variant="dots" gap={12} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
     </div>
   );
