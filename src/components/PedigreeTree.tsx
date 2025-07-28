@@ -1,51 +1,51 @@
 
 import React, { useMemo } from 'react';
 import ReactFlow, { Node, Edge, Controls, Background, BackgroundVariant } from 'reactflow';
-import  PedigreeNode  from './PedigreeNode';
+import PedigreeNode from './PedigreeNode';
 import { Goat } from '@/types/goat';
 
 const nodeTypes = {
-  pedigreeNode: PedigreeNode,
+  pedigree: PedigreeNode,
 };
 
 export interface PedigreeTreeProps {
-  pedigreeData: any;
+  goats: Goat[];
   selectedGoatId: string;
   onGoatSelect: (goat: Goat) => void;
   onShowHealth: (goatId: string) => void;
   onShowWeight: (goatId: string) => void;
 }
 
-export const PedigreeTree: React.FC<PedigreeTreeProps> = ({
-  pedigreeData,
-  selectedGoatId,
-  onGoatSelect,
-  onShowHealth,
-  onShowWeight
-}) => {
+export default function PedigreeTree({ 
+  goats, 
+  selectedGoatId, 
+  onGoatSelect, 
+  onShowHealth, 
+  onShowWeight 
+}: PedigreeTreeProps) {
   const { nodes, edges } = useMemo(() => {
-    if (!pedigreeData || !pedigreeData.nodes) {
-      return { nodes: [], edges: [] };
-    }
+    const selectedGoat = goats.find(g => g.id === selectedGoatId);
+    if (!selectedGoat) return { nodes: [], edges: [] };
 
-    const nodes: Node[] = pedigreeData.nodes.map((node: any) => ({
-      id: node.id,
-      type: 'pedigreeNode',
-      position: node.position,
-      data: {
-        goat: node.data.goat,
-        generation: node.data.generation,
-        onGoatSelect,
-        onShowHealth,
-        onShowWeight,
-        isSelected: node.id === selectedGoatId
-      }
-    }));
+    const nodes: Node[] = [
+      {
+        id: selectedGoat.id,
+        type: 'pedigree',
+        position: { x: 400, y: 200 },
+        data: {
+          goat: selectedGoat,
+          generation: 0,
+          onGoatSelect,
+          onShowHealth,
+          onShowWeight,
+        },
+      },
+    ];
 
-    const edges: Edge[] = pedigreeData.edges || [];
+    const edges: Edge[] = [];
 
     return { nodes, edges };
-  }, [pedigreeData, selectedGoatId, onGoatSelect, onShowHealth, onShowWeight]);
+  }, [goats, selectedGoatId, onGoatSelect, onShowHealth, onShowWeight]);
 
   return (
     <div className="w-full h-full">
@@ -61,4 +61,4 @@ export const PedigreeTree: React.FC<PedigreeTreeProps> = ({
       </ReactFlow>
     </div>
   );
-};
+}

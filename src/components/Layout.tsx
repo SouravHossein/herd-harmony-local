@@ -1,78 +1,70 @@
-
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  Home, 
-  Users, 
-  Scale, 
-  Heart, 
-  GitBranch, 
-  DollarSign, 
-  Settings, 
-  Download, 
-  Upload, 
-  Shield,
-  Wheat
+import React, { useState } from 'react';
+import {
+  Home,
+  Users,
+  Scale,
+  TrendingUp,
+  Heart,
+  GitBranch,
+  Wheat,
+  DollarSign,
+  Database,
+  HardDrive,
 } from 'lucide-react';
+import { Sidebar } from '@/components/ui/sidebar';
+import { ModeToggle } from '@/components/ModeToggle';
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentPage: string;
-  onPageChange: (page: string) => void;
+  currentView: string;
+  onViewChange: (view: string) => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) => {
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'goats', label: 'Goat Management', icon: Users },
-    { id: 'weight', label: 'Weight Tracking', icon: Scale },
-    { id: 'health-ai', label: 'Health AI', icon: Heart },
-    { id: 'feed', label: 'Feed & Nutrition', icon: Wheat },
-    { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
-    { id: 'finance', label: 'Finance', icon: DollarSign },
-    { id: 'backup', label: 'Backup', icon: Shield },
-    { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'export', label: 'Export', icon: Download },
-    { id: 'import', label: 'Import', icon: Upload },
-  ];
+const menuItems = [
+  { href: '/', label: 'Dashboard', icon: Home },
+  { href: '/goats', label: 'Goat Management', icon: Users },
+  { href: '/weight', label: 'Weight Tracking', icon: Scale },
+  { href: '/growth', label: 'Growth Optimizer', icon: TrendingUp },
+  { href: '/health', label: 'Health AI', icon: Heart },
+  { href: '/pedigree', label: 'Pedigree Tree', icon: GitBranch },
+  { href: '/feed', label: 'Feed Management', icon: Wheat },
+  { href: '/finance', label: 'Finance', icon: DollarSign },
+  { href: '/data', label: 'Data Management', icon: Database },
+  { href: '/backup', label: 'Backup', icon: HardDrive },
+];
 
+export function Layout({ children, currentView, onViewChange }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="w-64 bg-card border-r">
-          <div className="p-6">
-            <h1 className="text-xl font-bold text-foreground">Goat Tracker</h1>
-            <p className="text-sm text-muted-foreground">Farm Management System</p>
-          </div>
-          
-          <nav className="px-4 space-y-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Button
-                  key={item.id}
-                  variant={currentPage === item.id ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => onPageChange(item.id)}
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  {item.label}
-                </Button>
-              );
-            })}
-          </nav>
+    <div className="flex h-screen bg-background">
+      <Sidebar className="w-64 border-r flex-none">
+        <div className="p-4">
+          <h1 className="font-bold text-2xl">Goat Tracker</h1>
         </div>
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto">
-          <main className="p-6">
-            {children}
-          </main>
+        <div className="p-4 space-y-2">
+          {menuItems.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className={`flex items-center space-x-2 p-2 rounded-md hover:bg-secondary ${
+                currentView === item.href.slice(1) ? 'bg-secondary font-medium' : ''
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                onViewChange(item.href.slice(1));
+              }}
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.label}</span>
+            </a>
+          ))}
         </div>
-      </div>
+        <div className="mt-auto p-4">
+          <ModeToggle />
+        </div>
+      </Sidebar>
+      <main className="flex-1 p-8">
+        {children}
+      </main>
     </div>
   );
-};
+}

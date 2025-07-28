@@ -1,4 +1,3 @@
-
 export interface Goat {
   id: string;
   name: string;
@@ -108,4 +107,36 @@ export interface FeedStats {
   lowStockFeeds: Feed[];
   expiringFeeds: Feed[];
   monthlyCostTrends: Array<{ month: string; cost: number }>;
+}
+
+// Add new interfaces for growth optimization
+export interface BreedStandard {
+  id: string;
+  breedName: string;
+  milestones: Array<{
+    ageMonths: number;
+    expectedWeight: number; // in kg
+    minWeight: number;
+    maxWeight: number;
+  }>;
+  isCustom: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GrowthPerformance {
+  goatId: string;
+  currentScore: number; // GPS (Growth Performance Score)
+  trend: 'improving' | 'stable' | 'declining';
+  status: 'above-standard' | 'on-track' | 'below-standard' | 'concerning';
+  lastCalculated: Date;
+  recommendations: string[];
+}
+
+export interface GrowthAnalytics {
+  averageHerdGPS: number;
+  topPerformers: Array<{ goatId: string; score: number }>;
+  underPerformers: Array<{ goatId: string; score: number }>;
+  growthTrends: Array<{ month: string; averageGPS: number }>;
+  breedComparison: Record<string, number>;
 }

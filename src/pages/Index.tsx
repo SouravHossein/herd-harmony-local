@@ -1,60 +1,42 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GoatProvider } from '@/context/GoatContext';
 import { Layout } from '@/components/Layout';
 import { Dashboard } from '@/components/Dashboard';
 import { GoatManagement } from '@/components/GoatManagement';
-import { DataManagement } from '@/components/DataManagement';
 import { WeightTracking } from '@/components/WeightTracking';
-import { HealthRecords } from '@/components/HealthRecords';
-import { HealthDashboard } from '@/components/HealthDashboard';
-import { PedigreeWrapper } from '@/components/PedigreeWrapper';
-import { loadSampleData } from '@/data/sampleData';
-import { FinanceDashboard } from '@/components/FinanceDashboard';
-import { BackupManager } from '@/components/BackupManager';
 import { HealthAI } from '@/components/HealthAI';
+import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
+import { FinanceDashboard } from '@/components/finance/FinanceDashboard';
+import { DataManagement } from '@/components/DataManagement';
+import { BackupManager } from '@/components/BackupManager';
+import { GrowthOptimizer } from '@/components/GrowthOptimizer';
 
-const Index = () => {
-  const [currentPage, setCurrentPage] = useState('dashboard');
+function Index() {
+  const [currentView, setCurrentView] = useState('dashboard');
 
-  useEffect(() => {
-    // Load sample data on first visit
-    loadSampleData();
-  }, []);
-
-  const handleShowHealth = (goatId: string) => {
-    setCurrentPage('health-ai');
-    // Here you could pass the goatId to filter health records
-  };
-
-  const handleShowWeight = (goatId: string) => {
-    setCurrentPage('weight');
-    // Here you could pass the goatId to filter weight records
-  };
-
-  const renderPage = () => {
-    switch (currentPage) {
+  const renderContent = () => {
+    switch (currentView) {
       case 'dashboard':
         return <Dashboard />;
       case 'goats':
         return <GoatManagement />;
       case 'weight':
         return <WeightTracking />;
-      case 'health-ai':
+      case 'growth':
+        return <GrowthOptimizer />;
+      case 'health':
         return <HealthAI />;
+      case 'pedigree':
+        return <PedigreeWrapper />;
       case 'feed':
         return <FeedDashboard />;
-      case 'pedigree':
-        return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
       case 'finance':
         return <FinanceDashboard />;
+      case 'data':
+        return <DataManagement />;
       case 'backup':
         return <BackupManager />;
-      case 'export':
-      case 'import':
-      case 'settings':
-        return <DataManagement />;
       default:
         return <Dashboard />;
     }
@@ -62,11 +44,11 @@ const Index = () => {
 
   return (
     <GoatProvider>
-      <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
-        {renderPage()}
+      <Layout currentView={currentView} onViewChange={setCurrentView}>
+        {renderContent()}
       </Layout>
     </GoatProvider>
   );
-};
+}
 
 export default Index;
