@@ -7,6 +7,7 @@ import { GoatManagement } from '@/components/GoatManagement';
 import { DataManagement } from '@/components/DataManagement';
 import { WeightTracking } from '@/components/WeightTracking';
 import { HealthRecords } from '@/components/HealthRecords';
+import { HealthDashboard } from '@/components/HealthDashboard';
 import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { loadSampleData } from '@/data/sampleData';
 
@@ -38,6 +39,8 @@ const Index = () => {
         return <WeightTracking />;
       case 'health':
         return <HealthRecords />;
+      case 'health-ai':
+        return <HealthDashboard />;
       case 'pedigree':
         return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
       case 'export':

@@ -1,13 +1,14 @@
-
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const DatabaseService = require('./services/DatabaseService');
 const PedigreeService = require('./services/PedigreeService');
 const FileService = require('./services/FileService');
+const NotificationService = require('./services/NotificationService');
 
 let db;
 let pedigreeService;
 let fileService;
+let notificationService;
 let mainWindow;
 
 function createWindow() {
@@ -42,8 +43,14 @@ app.whenReady().then(() => {
   db = new DatabaseService();
   pedigreeService = new PedigreeService(db);
   fileService = new FileService(mainWindow);
+  notificationService = new NotificationService();
   
   createWindow();
+
+  // Start health reminders
+  notificationService.requestPermission().then(() => {
+    notificationService.startHealthReminders(db);
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -53,6 +60,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  notificationService.stopHealthReminders();
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -105,3 +113,9 @@ ipcMain.handle('dialog:showSaveDialog', async (event, options) => fileService.sh
 ipcMain.handle('dialog:showOpenDialog', async (event, options) => fileService.showOpenDialog(options));
 ipcMain.handle('fs:writeFile', async (event, filePath, data) => fileService.writeFile(filePath, data));
 ipcMain.handle('fs:readFile', async (event, filePath) => fileService.readFile(filePath));
+
+// Notification operations
+ipcMain.handle('notification:requestPermission', () => notificationService.requestPermission());
+ipcMain.handle('notification:showHealthReminder', (event, goatName, type) => 
+  notificationService.showVaccinationReminder(goatName, type)
+);

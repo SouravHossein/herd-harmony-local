@@ -1,78 +1,145 @@
 
 import React from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Heart, Weight, User, Calendar } from 'lucide-react';
 
-interface PedigreeNodeProps {
-  data: {
-    goat: {
-      id: string;
-      name: string;
-      breed: string;
-      gender: 'male' | 'female';
-      status: 'active' | 'sold' | 'deceased';
-      photoPath?: string;
-    };
-    generation: number;
-  };
-  selected: boolean;
+interface GoatNodeData {
+  name: string;
+  breed: string;
+  gender: 'male' | 'female' | 'unknown';
+  status: 'active' | 'deceased' | 'sold';
+  dateOfBirth?: Date;
+  photoPath?: string;
+  onClick?: () => void;
+  onShowHealth?: () => void;
+  onShowWeight?: () => void;
 }
 
-export function PedigreeNode({ data, selected }: PedigreeNodeProps) {
-  const { goat, generation } = data;
-  
+export function PedigreeNode({ data, selected }: NodeProps<GoatNodeData>) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'border-green-500';
-      case 'sold': return 'border-blue-500';
-      case 'deceased': return 'border-gray-500';
-      default: return 'border-gray-300';
+      case 'active':
+        return 'border-green-500 bg-green-50';
+      case 'deceased':
+        return 'border-gray-500 bg-gray-50';
+      case 'sold':
+        return 'border-blue-500 bg-blue-50';
+      default:
+        return 'border-gray-300 bg-white';
+    }
+  };
+
+  const getGenderIcon = (gender: string) => {
+    switch (gender) {
+      case 'male':
+        return '♂';
+      case 'female':
+        return '♀';
+      default:
+        return '?';
     }
   };
 
   const getGenderColor = (gender: string) => {
-    return gender === 'male' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700';
+    switch (gender) {
+      case 'male':
+        return 'text-blue-600';
+      case 'female':
+        return 'text-pink-600';
+      default:
+        return 'text-gray-500';
+    }
   };
 
   return (
-    <Card className={cn(
-      'w-48 h-32 cursor-pointer transition-all hover:shadow-lg',
-      getStatusColor(goat.status),
-      'border-2',
-      selected && 'ring-2 ring-primary ring-offset-2'
-    )}>
-      <CardContent className="p-3 h-full flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-xs text-muted-foreground">
-            Gen {generation}
-          </div>
-          <Badge variant="outline" className={getGenderColor(goat.gender)}>
-            {goat.gender === 'male' ? '♂' : '♀'}
-          </Badge>
-        </div>
-        
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="font-semibold text-sm truncate mb-1">
-              {goat.name}
-            </div>
-            <div className="text-xs text-muted-foreground truncate">
-              {goat.breed}
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex justify-center">
-          <Badge variant="secondary" className="text-xs">
-            {goat.status}
-          </Badge>
-        </div>
-      </CardContent>
+    <div className="relative">
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="w-3 h-3 !bg-muted-foreground"
+      />
       
-      <Handle type="target" position={Position.Right} className="w-2 h-2" />
-      <Handle type="source" position={Position.Left} className="w-2 h-2" />
-    </Card>
+      <Card 
+        className={`
+          w-48 cursor-pointer transition-all duration-200 hover:shadow-lg
+          ${getStatusColor(data.status)}
+          ${selected ? 'ring-2 ring-primary' : ''}
+        `}
+        onClick={data.onClick}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <span className={`text-lg font-bold ${getGenderColor(data.gender)}`}>
+                {getGenderIcon(data.gender)}
+              </span>
+              <Badge variant="outline" className="text-xs">
+                {data.status}
+              </Badge>
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <h3 className="font-semibold text-sm text-foreground truncate">
+              {data.name}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {data.breed}
+            </p>
+            {data.dateOfBirth && (
+              <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(data.dateOfBirth).getFullYear()}</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex space-x-1 mt-3">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onShowHealth?.();
+              }}
+            >
+              <Heart className="h-3 w-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onShowWeight?.();
+              }}
+            >
+              <Weight className="h-3 w-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onClick?.();
+              }}
+            >
+              <User className="h-3 w-3" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="w-3 h-3 !bg-muted-foreground"
+      />
+    </div>
   );
 }
