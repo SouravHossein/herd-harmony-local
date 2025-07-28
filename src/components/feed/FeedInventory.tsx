@@ -1,312 +1,323 @@
 import React, { useState } from 'react';
-import { useGoatData } from '@/hooks/useDatabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { formatDate } from '@/lib/utils';
-import { Plus, Package, AlertTriangle, Calendar, DollarSign } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Feed } from '@/types/goat';
+import { Edit, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { format } from 'date-fns';
 
-export function FeedInventory() {
-  const { feeds, addFeed, updateFeed, deleteFeed } = useGoatData();
-  const { toast } = useToast();
+interface FeedInventoryProps {
+  feeds: Feed[];
+  onAddFeed: (feed: Omit<Feed, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onUpdateFeed: (id: string, updates: Partial<Feed>) => void;
+  onDeleteFeed: (id: string) => void;
+}
+
+export default function FeedInventory({ 
+  feeds, 
+  onAddFeed, 
+  onUpdateFeed, 
+  onDeleteFeed 
+}: FeedInventoryProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingFeed, setEditingFeed] = useState<Feed | null>(null);
+  const [newFeed, setNewFeed] = useState<Omit<Feed, 'id' | 'createdAt' | 'updatedAt'>>({
+    name: '',
+    type: 'hay',
+    costPerKg: 0,
+    stockKg: 0,
+    supplier: '',
+    expiryDate: undefined,
+  });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
+  const [editFeed, setEditFeed] = useState<Partial<Feed>>({});
 
-  const handleAddFeed = (formData: FormData) => {
-    const feedData = {
-      name: formData.get('name') as string,
-      type: formData.get('type') as 'hay' | 'grain' | 'supplement' | 'pellet' | 'mineral' | 'other',
-      costPerKg: parseFloat(formData.get('costPerKg') as string),
-      stockKg: parseFloat(formData.get('stockKg') as string),
-      expiryDate: formData.get('expiryDate') ? new Date(formData.get('expiryDate') as string) : undefined,
-      supplier: formData.get('supplier') as string,
-      nutritionalInfo: {
-        protein: parseFloat(formData.get('protein') as string) || 0,
-        fiber: parseFloat(formData.get('fiber') as string) || 0,
-        energy: parseFloat(formData.get('energy') as string) || 0,
-      },
-    };
-
-    addFeed(feedData);
+  const handleAddFeed = () => {
+    onAddFeed(newFeed);
+    setNewFeed({ name: '', type: 'hay', costPerKg: 0, stockKg: 0, supplier: '', expiryDate: undefined });
     setIsAddDialogOpen(false);
-    toast({
-      title: "Feed Added",
-      description: `${feedData.name} has been added to inventory`,
-    });
   };
 
-  const handleUpdateFeed = (formData: FormData) => {
-    if (!editingFeed) return;
+  const handleEditFeed = (id: string) => {
+    const feedToEdit = feeds.find(feed => feed.id === id);
+    if (feedToEdit) {
+      setSelectedFeedId(id);
+      setEditFeed(feedToEdit);
+      setIsEditDialogOpen(true);
+    }
+  };
 
-    const updates = {
-      name: formData.get('name') as string,
-      type: formData.get('type') as 'hay' | 'grain' | 'supplement' | 'pellet' | 'mineral' | 'other',
-      costPerKg: parseFloat(formData.get('costPerKg') as string),
-      stockKg: parseFloat(formData.get('stockKg') as string),
-      expiryDate: formData.get('expiryDate') ? new Date(formData.get('expiryDate') as string) : undefined,
-      supplier: formData.get('supplier') as string,
-      nutritionalInfo: {
-        protein: parseFloat(formData.get('protein') as string) || 0,
-        fiber: parseFloat(formData.get('fiber') as string) || 0,
-        energy: parseFloat(formData.get('energy') as string) || 0,
-      },
-    };
+  const handleUpdateFeed = () => {
+    if (selectedFeedId) {
+      onUpdateFeed(selectedFeedId, editFeed);
+      setIsEditDialogOpen(false);
+      setSelectedFeedId(null);
+      setEditFeed({});
+    }
+  };
 
-    updateFeed(editingFeed.id, updates);
-    setEditingFeed(null);
-    toast({
-      title: "Feed Updated",
-      description: "Feed information has been updated successfully",
-    });
+  const handleDeleteFeed = (id: string) => {
+    onDeleteFeed(id);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Feed Inventory</h2>
-          <p className="text-muted-foreground">Manage your feed stock and track usage</p>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Feed Inventory</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4">
+          <Button onClick={() => setIsAddDialogOpen(true)}>Add Feed</Button>
         </div>
+        <ScrollArea>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Cost/Kg</TableHead>
+                <TableHead>Stock (Kg)</TableHead>
+                <TableHead>Supplier</TableHead>
+                <TableHead>Expiry Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {feeds.map((feed) => (
+                <TableRow key={feed.id}>
+                  <TableCell>{feed.name}</TableCell>
+                  <TableCell>{feed.type}</TableCell>
+                  <TableCell>${feed.costPerKg.toFixed(2)}</TableCell>
+                  <TableCell>{feed.stockKg}</TableCell>
+                  <TableCell>{feed.supplier}</TableCell>
+                  <TableCell>
+                    {feed.expiryDate ? format(new Date(feed.expiryDate), 'yyyy-MM-dd') : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => handleEditFeed(feed.id)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteFeed(feed.id)}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
+
+        {/* Add Feed Dialog */}
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Feed
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Add New Feed</DialogTitle>
             </DialogHeader>
-            <FeedForm onSubmit={handleAddFeed} />
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={newFeed.name}
+                  onChange={(e) => setNewFeed({ ...newFeed, name: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="type" className="text-right">
+                  Type
+                </Label>
+                <select
+                  id="type"
+                  value={newFeed.type}
+                  onChange={(e) => setNewFeed({ ...newFeed, type: e.target.value as any })}
+                  className="col-span-3 rounded-md border-gray-200 shadow-sm focus:border-primary focus:ring-primary"
+                >
+                  <option value="hay">Hay</option>
+                  <option value="grain">Grain</option>
+                  <option value="supplement">Supplement</option>
+                  <option value="pellet">Pellet</option>
+                  <option value="mineral">Mineral</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="costPerKg" className="text-right">
+                  Cost/Kg
+                </Label>
+                <Input
+                  type="number"
+                  id="costPerKg"
+                  value={newFeed.costPerKg}
+                  onChange={(e) => setNewFeed({ ...newFeed, costPerKg: parseFloat(e.target.value) })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="stockKg" className="text-right">
+                  Stock (Kg)
+                </Label>
+                <Input
+                  type="number"
+                  id="stockKg"
+                  value={newFeed.stockKg}
+                  onChange={(e) => setNewFeed({ ...newFeed, stockKg: parseFloat(e.target.value) })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="supplier" className="text-right">
+                  Supplier
+                </Label>
+                <Input
+                  id="supplier"
+                  value={newFeed.supplier}
+                  onChange={(e) => setNewFeed({ ...newFeed, supplier: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="expiryDate" className="text-right">
+                  Expiry Date
+                </Label>
+                <Input
+                  type="date"
+                  id="expiryDate"
+                  value={newFeed.expiryDate ? format(new Date(newFeed.expiryDate), 'yyyy-MM-dd') : ''}
+                  onChange={(e) => setNewFeed({ ...newFeed, expiryDate: new Date(e.target.value) })}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setIsAddDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" onClick={handleAddFeed}>
+                Add Feed
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
 
-      {/* Feed Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {feeds.map((feed) => (
-          <Card key={feed.id} className="relative">
-            <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{feed.name}</CardTitle>
-                  <Badge variant="outline" className="mt-1 capitalize">
-                    {feed.type}
-                  </Badge>
-                </div>
-                <Package className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Stock:</span>
-                  <span className="font-medium">{feed.stockKg} kg</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Cost/kg:</span>
-                  <span className="font-medium">${feed.costPerKg}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Supplier:</span>
-                  <span className="font-medium">{feed.supplier}</span>
-                </div>
-                {feed.expiryDate && (
-                  <div className="flex justify-between text-sm">
-                    <span>Expires:</span>
-                    <span className="font-medium">{formatDate(feed.expiryDate)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4 flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingFeed(feed)}
-                  className="flex-1"
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => deleteFeed(feed.id)}
-                  className="flex-1"
-                >
-                  Delete
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Edit Dialog */}
-      {editingFeed && (
-        <Dialog open={!!editingFeed} onOpenChange={() => setEditingFeed(null)}>
-          <DialogContent>
+        {/* Edit Feed Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Edit Feed</DialogTitle>
             </DialogHeader>
-            <FeedForm 
-              onSubmit={handleUpdateFeed} 
-              initialData={editingFeed}
-              isEditing 
-            />
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="editName" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="editName"
+                  value={editFeed.name || ''}
+                  onChange={(e) => setEditFeed({ ...editFeed, name: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="editType" className="text-right">
+                  Type
+                </Label>
+                <select
+                  id="editType"
+                  value={editFeed.type || 'hay'}
+                  onChange={(e) => setEditFeed({ ...editFeed, type: e.target.value as any })}
+                  className="col-span-3 rounded-md border-gray-200 shadow-sm focus:border-primary focus:ring-primary"
+                >
+                  <option value="hay">Hay</option>
+                  <option value="grain">Grain</option>
+                  <option value="supplement">Supplement</option>
+                  <option value="pellet">Pellet</option>
+                  <option value="mineral">Mineral</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="editCostPerKg" className="text-right">
+                  Cost/Kg
+                </Label>
+                <Input
+                  type="number"
+                  id="editCostPerKg"
+                  value={editFeed.costPerKg || 0}
+                  onChange={(e) => setEditFeed({ ...editFeed, costPerKg: parseFloat(e.target.value) })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="editStockKg" className="text-right">
+                  Stock (Kg)
+                </Label>
+                <Input
+                  type="number"
+                  id="editStockKg"
+                  value={editFeed.stockKg || 0}
+                  onChange={(e) => setEditFeed({ ...editFeed, stockKg: parseFloat(e.target.value) })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="editSupplier" className="text-right">
+                  Supplier
+                </Label>
+                <Input
+                  id="editSupplier"
+                  value={editFeed.supplier || ''}
+                  onChange={(e) => setEditFeed({ ...editFeed, supplier: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="editExpiryDate" className="text-right">
+                  Expiry Date
+                </Label>
+                <Input
+                  type="date"
+                  id="editExpiryDate"
+                  value={editFeed.expiryDate ? format(new Date(editFeed.expiryDate), 'yyyy-MM-dd') : ''}
+                  onChange={(e) => setEditFeed({ ...editFeed, expiryDate: new Date(e.target.value) })}
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" onClick={handleUpdateFeed}>
+                Update Feed
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
-      )}
-    </div>
-  );
-}
-
-interface FeedFormProps {
-  onSubmit: (formData: FormData) => void;
-  initialData?: Feed;
-  isEditing?: boolean;
-}
-
-function FeedForm({ onSubmit, initialData, isEditing = false }: FeedFormProps) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    onSubmit(formData);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Feed Name *</Label>
-          <Input 
-            id="name" 
-            name="name" 
-            defaultValue={initialData?.name}
-            required 
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="type">Feed Type *</Label>
-          <Select name="type" defaultValue={initialData?.type} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select feed type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="hay">Hay</SelectItem>
-              <SelectItem value="grain">Grain</SelectItem>
-              <SelectItem value="supplement">Supplement</SelectItem>
-              <SelectItem value="pellet">Pellet</SelectItem>
-              <SelectItem value="mineral">Mineral</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="costPerKg">Cost per kg *</Label>
-          <Input 
-            id="costPerKg" 
-            name="costPerKg" 
-            type="number"
-            step="0.01"
-            min="0"
-            defaultValue={initialData?.costPerKg}
-            required 
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="stockKg">Stock (kg) *</Label>
-          <Input 
-            id="stockKg" 
-            name="stockKg" 
-            type="number"
-            step="0.1"
-            min="0"
-            defaultValue={initialData?.stockKg}
-            required 
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="supplier">Supplier *</Label>
-          <Input 
-            id="supplier" 
-            name="supplier" 
-            defaultValue={initialData?.supplier}
-            required 
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="expiryDate">Expiry Date</Label>
-          <Input 
-            id="expiryDate" 
-            name="expiryDate" 
-            type="date"
-            defaultValue={initialData?.expiryDate ? 
-              new Date(initialData.expiryDate).toISOString().split('T')[0] : ''
-            }
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Nutritional Information</Label>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="protein">Protein %</Label>
-            <Input 
-              id="protein" 
-              name="protein" 
-              type="number"
-              step="0.1"
-              min="0"
-              max="100"
-              defaultValue={initialData?.nutritionalInfo?.protein}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="fiber">Fiber %</Label>
-            <Input 
-              id="fiber" 
-              name="fiber" 
-              type="number"
-              step="0.1"
-              min="0"
-              max="100"
-              defaultValue={initialData?.nutritionalInfo?.fiber}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="energy">Energy (MJ/kg)</Label>
-            <Input 
-              id="energy" 
-              name="energy" 
-              type="number"
-              step="0.1"
-              min="0"
-              defaultValue={initialData?.nutritionalInfo?.energy}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button type="submit">
-          {isEditing ? 'Update Feed' : 'Add Feed'}
-        </Button>
-      </div>
-    </form>
+      </CardContent>
+    </Card>
   );
 }

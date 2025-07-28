@@ -1,70 +1,80 @@
-import React, { useState } from 'react';
-import {
-  Home,
-  Users,
-  Scale,
-  TrendingUp,
-  Heart,
+
+import React, { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Scale, 
+  Heart, 
   GitBranch,
-  Wheat,
   DollarSign,
+  Wheat,
+  Activity,
+  TrendingUp,
+  Baby,
   Database,
-  HardDrive,
+  Shield
 } from 'lucide-react';
-import { Sidebar } from '@/components/ui/sidebar';
-import { ModeToggle } from '@/components/ModeToggle';
 
 interface LayoutProps {
-  children: React.ReactNode;
-  currentView: string;
-  onViewChange: (view: string) => void;
+  children: ReactNode;
+  activeSection: string;
+  onSectionChange: (section: string) => void;
 }
 
-const menuItems = [
-  { href: '/', label: 'Dashboard', icon: Home },
-  { href: '/goats', label: 'Goat Management', icon: Users },
-  { href: '/weight', label: 'Weight Tracking', icon: Scale },
-  { href: '/growth', label: 'Growth Optimizer', icon: TrendingUp },
-  { href: '/health', label: 'Health AI', icon: Heart },
-  { href: '/pedigree', label: 'Pedigree Tree', icon: GitBranch },
-  { href: '/feed', label: 'Feed Management', icon: Wheat },
-  { href: '/finance', label: 'Finance', icon: DollarSign },
-  { href: '/data', label: 'Data Management', icon: Database },
-  { href: '/backup', label: 'Backup', icon: HardDrive },
+const navigationItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'goats', label: 'Goats', icon: Users },
+  { id: 'weight', label: 'Weight', icon: Scale },
+  { id: 'health', label: 'Health', icon: Heart },
+  { id: 'breeding', label: 'Breeding', icon: Baby },
+  { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
+  { id: 'finance', label: 'Finance', icon: DollarSign },
+  { id: 'feed', label: 'Feed', icon: Wheat },
+  { id: 'health-ai', label: 'Health AI', icon: Activity },
+  { id: 'growth-optimizer', label: 'Growth', icon: TrendingUp },
+  { id: 'data', label: 'Data', icon: Database },
+  { id: 'backup', label: 'Backup', icon: Shield },
 ];
 
-export function Layout({ children, currentView, onViewChange }: LayoutProps) {
+export function Layout({ children, activeSection, onSectionChange }: LayoutProps) {
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar className="w-64 border-r flex-none">
-        <div className="p-4">
-          <h1 className="font-bold text-2xl">Goat Tracker</h1>
+    <div className="min-h-screen bg-background">
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="w-64 border-r border-border bg-card">
+          <div className="p-6">
+            <h1 className="text-xl font-bold text-foreground">Goat Tracker</h1>
+          </div>
+          <nav className="space-y-1 px-3">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.id}
+                  variant={activeSection === item.id ? "default" : "ghost"}
+                  className={cn(
+                    "w-full justify-start",
+                    activeSection === item.id && "bg-primary text-primary-foreground"
+                  )}
+                  onClick={() => onSectionChange(item.id)}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {item.label}
+                </Button>
+              );
+            })}
+          </nav>
         </div>
-        <div className="p-4 space-y-2">
-          {menuItems.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className={`flex items-center space-x-2 p-2 rounded-md hover:bg-secondary ${
-                currentView === item.href.slice(1) ? 'bg-secondary font-medium' : ''
-              }`}
-              onClick={(e) => {
-                e.preventDefault();
-                onViewChange(item.href.slice(1));
-              }}
-            >
-              <item.icon className="h-4 w-4" />
-              <span>{item.label}</span>
-            </a>
-          ))}
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto">
+          <div className="p-6">
+            {children}
+          </div>
         </div>
-        <div className="mt-auto p-4">
-          <ModeToggle />
-        </div>
-      </Sidebar>
-      <main className="flex-1 p-8">
-        {children}
-      </main>
+      </div>
     </div>
   );
 }

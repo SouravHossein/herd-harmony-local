@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { PedigreeTree } from './PedigreeTree';
+import PedigreeTree from './PedigreeTree';
 import { PedigreeSidebar } from './PedigreeSidebar';
 import { useGoatContext } from '@/context/GoatContext';
 import { Goat } from '@/types/goat';

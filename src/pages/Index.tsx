@@ -1,38 +1,53 @@
-import React, { useState } from 'react';
-import { GoatProvider } from '@/context/GoatContext';
+
+import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Dashboard } from '@/components/Dashboard';
 import { GoatManagement } from '@/components/GoatManagement';
 import { WeightTracking } from '@/components/WeightTracking';
-import { HealthAI } from '@/components/HealthAI';
+import { HealthDashboard } from '@/components/HealthDashboard';
 import { PedigreeWrapper } from '@/components/PedigreeWrapper';
-import { FeedDashboard } from '@/components/feed/FeedDashboard';
-import { FinanceDashboard } from '@/components/finance/FinanceDashboard';
 import { DataManagement } from '@/components/DataManagement';
 import { BackupManager } from '@/components/BackupManager';
+import { FeedDashboard } from '@/components/feed/FeedDashboard';
+import FinanceDashboard from '@/components/finance/FinanceDashboard';
+import { HealthAI } from '@/components/HealthAI';
 import { GrowthOptimizer } from '@/components/GrowthOptimizer';
+import BreedingPlanner from '@/components/breeding/BreedingPlanner';
+import { GoatContextProvider } from '@/context/GoatContext';
 
-function Index() {
-  const [currentView, setCurrentView] = useState('dashboard');
+export default function Index() {
+  const [activeSection, setActiveSection] = useState('dashboard');
+
+  const handleShowHealth = (goatId: string) => {
+    setActiveSection('health');
+  };
+
+  const handleShowWeight = (goatId: string) => {
+    setActiveSection('weight');
+  };
 
   const renderContent = () => {
-    switch (currentView) {
+    switch (activeSection) {
       case 'dashboard':
         return <Dashboard />;
       case 'goats':
         return <GoatManagement />;
       case 'weight':
         return <WeightTracking />;
-      case 'growth':
-        return <GrowthOptimizer />;
       case 'health':
-        return <HealthAI />;
+        return <HealthDashboard />;
+      case 'breeding':
+        return <BreedingPlanner />;
       case 'pedigree':
-        return <PedigreeWrapper />;
-      case 'feed':
-        return <FeedDashboard />;
+        return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
       case 'finance':
         return <FinanceDashboard />;
+      case 'feed':
+        return <FeedDashboard />;
+      case 'health-ai':
+        return <HealthAI />;
+      case 'growth-optimizer':
+        return <GrowthOptimizer />;
       case 'data':
         return <DataManagement />;
       case 'backup':
@@ -43,12 +58,10 @@ function Index() {
   };
 
   return (
-    <GoatProvider>
-      <Layout currentView={currentView} onViewChange={setCurrentView}>
+    <GoatContextProvider>
+      <Layout activeSection={activeSection} onSectionChange={setActiveSection}>
         {renderContent()}
       </Layout>
-    </GoatProvider>
+    </GoatContextProvider>
   );
 }
-
-export default Index;

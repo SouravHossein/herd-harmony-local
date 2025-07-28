@@ -1,477 +1,254 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGoatContext } from '@/context/GoatContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Target, 
-  AlertTriangle, 
-  CheckCircle, 
-  Trophy,
-  Activity,
-  Scale
-} from 'lucide-react';
-import { GrowthAI } from '@/lib/growthAI';
+import { Goat, WeightRecord, BreedStandard, GrowthPerformance, GrowthAnalytics } from '@/types/goat';
 
-export function GrowthOptimizer() {
-  const { goats, weightRecords, getGoatWeightHistory } = useGoatContext();
-  const [selectedGoatId, setSelectedGoatId] = useState<string>('');
-  const [selectedTab, setSelectedTab] = useState('overview');
+interface GrowthOptimizerProps {
+  // Add any props if needed
+}
 
-  const activeGoats = goats.filter(goat => goat.status === 'active');
-  const selectedGoat = goats.find(goat => goat.id === selectedGoatId);
+const BREED_STANDARDS: Record<string, BreedStandard> = {
+  boer: {
+    id: 'boer',
+    breedName: 'Boer',
+    milestones: [
+      { ageMonths: 1, expectedWeight: 5, minWeight: 3, maxWeight: 7 },
+      { ageMonths: 3, expectedWeight: 15, minWeight: 12, maxWeight: 18 },
+      { ageMonths: 6, expectedWeight: 25, minWeight: 20, maxWeight: 30 },
+      { ageMonths: 12, expectedWeight: 40, minWeight: 35, maxWeight: 45 },
+      { ageMonths: 24, expectedWeight: 60, minWeight: 50, maxWeight: 70 },
+    ],
+    isCustom: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  kiko: {
+    id: 'kiko',
+    breedName: 'Kiko',
+    milestones: [
+      { ageMonths: 1, expectedWeight: 4, minWeight: 2, maxWeight: 6 },
+      { ageMonths: 3, expectedWeight: 14, minWeight: 10, maxWeight: 17 },
+      { ageMonths: 6, expectedWeight: 24, minWeight: 18, maxWeight: 28 },
+      { ageMonths: 12, expectedWeight: 38, minWeight: 32, maxWeight: 44 },
+      { ageMonths: 24, expectedWeight: 58, minWeight: 48, maxWeight: 68 },
+    ],
+    isCustom: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  spanish: {
+    id: 'spanish',
+    breedName: 'Spanish',
+    milestones: [
+      { ageMonths: 1, expectedWeight: 3, minWeight: 1.5, maxWeight: 4.5 },
+      { ageMonths: 3, expectedWeight: 12, minWeight: 9, maxWeight: 15 },
+      { ageMonths: 6, expectedWeight: 22, minWeight: 17, maxWeight: 27 },
+      { ageMonths: 12, expectedWeight: 36, minWeight: 30, maxWeight: 42 },
+      { ageMonths: 24, expectedWeight: 55, minWeight: 45, maxWeight: 65 },
+    ],
+    isCustom: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  myotonic: {
+    id: 'myotonic',
+    breedName: 'Myotonic',
+    milestones: [
+      { ageMonths: 1, expectedWeight: 4, minWeight: 2, maxWeight: 6 },
+      { ageMonths: 3, expectedWeight: 13, minWeight: 10, maxWeight: 16 },
+      { ageMonths: 6, expectedWeight: 23, minWeight: 18, maxWeight: 28 },
+      { ageMonths: 12, expectedWeight: 37, minWeight: 30, maxWeight: 44 },
+      { ageMonths: 24, expectedWeight: 57, minWeight: 47, maxWeight: 67 },
+    ],
+    isCustom: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+};
 
-  // Calculate growth performances for all goats
-  const growthPerformances = useMemo(() => {
-    return activeGoats.map(goat => 
-      GrowthAI.calculateGrowthPerformanceScore(goat, weightRecords, [])
+export default function GrowthOptimizer() {
+  const { goats, weightRecords } = useGoatContext();
+  const [selectedGoat, setSelectedGoat] = useState<Goat | null>(null);
+  const [growthPerformance, setGrowthPerformance] = useState<GrowthPerformance | null>(null);
+  const [breedStandard, setBreedStandard] = useState<BreedStandard>(BREED_STANDARDS.boer);
+
+  useEffect(() => {
+    if (selectedGoat) {
+      const latestWeight = weightRecords
+        .filter(record => record.goatId === selectedGoat.id)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+      const performance = calculateGPS(selectedGoat, latestWeight);
+      setGrowthPerformance(performance);
+    } else {
+      setGrowthPerformance(null);
+    }
+  }, [selectedGoat, weightRecords]);
+
+  const handleGoatSelect = (goatId: string) => {
+    const goat = goats.find(g => g.id === goatId);
+    setSelectedGoat(goat || null);
+  };
+
+  const handleBreedStandardChange = (breedName: string) => {
+    setBreedStandard(BREED_STANDARDS[breedName.toLowerCase()] || BREED_STANDARDS.boer);
+  };
+
+  const calculateGPS = (goat: Goat, latestWeight: WeightRecord | undefined): GrowthPerformance => {
+    if (!latestWeight) {
+      return {
+        goatId: goat.id,
+        currentScore: 0,
+        trend: 'stable',
+        status: 'concerning',
+        lastCalculated: new Date(),
+        recommendations: ['No weight data available'],
+      };
+    }
+
+    const ageInMonths = Math.floor(
+      (new Date().getTime() - new Date(goat.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30)
     );
-  }, [activeGoats, weightRecords]);
 
-  // Get analytics
-  const analytics = useMemo(() => {
-    return GrowthAI.calculateHerdAnalytics(activeGoats, weightRecords, []);
-  }, [activeGoats, weightRecords]);
+    const breedStandard = BREED_STANDARDS[goat.breed.toLowerCase()] || BREED_STANDARDS.boer;
+    const expectedWeight = getExpectedWeight(breedStandard, ageInMonths);
 
-  // Get insights
-  const insights = useMemo(() => {
-    return GrowthAI.generateInsights(activeGoats, weightRecords, []);
-  }, [activeGoats, weightRecords]);
+    const score = expectedWeight > 0 ? (latestWeight.weight / expectedWeight) * 100 : 0;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'above-standard': return 'text-green-600';
-      case 'on-track': return 'text-blue-600';
-      case 'below-standard': return 'text-yellow-600';
-      case 'concerning': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
+    let status: 'above-standard' | 'on-track' | 'below-standard' | 'concerning';
+    if (score >= 110) status = 'above-standard';
+    else if (score >= 90) status = 'on-track';
+    else if (score >= 70) status = 'below-standard';
+    else status = 'concerning';
+
+    const recommendations = getRecommendations(score, goat);
+
+    return {
+      goatId: goat.id,
+      currentScore: Math.round(score),
+      trend: 'stable',
+      status,
+      lastCalculated: new Date(),
+      recommendations,
+    };
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'above-standard': return <Trophy className="h-4 w-4" />;
-      case 'on-track': return <CheckCircle className="h-4 w-4" />;
-      case 'below-standard': return <Activity className="h-4 w-4" />;
-      case 'concerning': return <AlertTriangle className="h-4 w-4" />;
-      default: return <Scale className="h-4 w-4" />;
+  const getRecommendations = (score: number, goat: Goat): string[] => {
+    const recommendations: string[] = [];
+
+    if (score < 70) {
+      recommendations.push('Consult with a veterinarian or nutritionist.');
+      recommendations.push('Review the goat\'s diet and feeding schedule.');
+      recommendations.push('Check for signs of illness or parasites.');
+    } else if (score < 90) {
+      recommendations.push('Monitor weight gain closely.');
+      recommendations.push('Adjust feed as necessary to meet growth targets.');
+    } else if (score > 110) {
+      recommendations.push('Ensure the goat is not being overfed.');
+      recommendations.push('Monitor for any signs of obesity-related health issues.');
+    } else {
+      recommendations.push('Continue current feeding and management practices.');
     }
+
+    return recommendations;
   };
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Growth Optimizer</h2>
-          <p className="text-muted-foreground">Monitor growth performance and optimize feeding strategies</p>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="individual">Individual</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Herd Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Average GPS</p>
-                    <p className="text-2xl font-bold">{analytics.averageHerdGPS}%</p>
-                  </div>
-                  <Target className="h-8 w-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Top Performers</p>
-                    <p className="text-2xl font-bold">{analytics.topPerformers.length}</p>
-                  </div>
-                  <Trophy className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Need Attention</p>
-                    <p className="text-2xl font-bold">{analytics.underPerformers.length}</p>
-                  </div>
-                  <AlertTriangle className="h-8 w-8 text-red-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Total Goats</p>
-                    <p className="text-2xl font-bold">{activeGoats.length}</p>
-                  </div>
-                  <Scale className="h-8 w-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Growth Performance Rankings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Growth Performance Rankings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {growthPerformances
-                  .sort((a, b) => b.currentScore - a.currentScore)
-                  .slice(0, 10)
-                  .map((performance, index) => {
-                    const goat = goats.find(g => g.id === performance.goatId);
-                    if (!goat) return null;
-
-                    return (
-                      <div key={goat.id} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-full text-primary-foreground text-sm font-bold">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium">{goat.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {goat.breed} • Tag #{goat.tagNumber}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="text-right">
-                            <p className="font-bold text-lg">{performance.currentScore}%</p>
-                            <div className="flex items-center space-x-1">
-                              <span className={`text-xs ${getStatusColor(performance.status)}`}>
-                                {getStatusIcon(performance.status)}
-                              </span>
-                              <span className="text-xs text-muted-foreground capitalize">
-                                {performance.status.replace('-', ' ')}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="w-24">
-                            <Progress 
-                              value={Math.min(performance.currentScore, 100)} 
-                              className="h-2"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Herd Growth Trends */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Herd Growth Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={analytics.growthTrends}>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="month" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="averageGPS" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Individual Tab */}
-        <TabsContent value="individual" className="space-y-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-4">
-                <label className="text-sm font-medium">Select Goat:</label>
-                <Select value={selectedGoatId} onValueChange={setSelectedGoatId}>
-                  <SelectTrigger className="w-64">
-                    <SelectValue placeholder="Choose a goat" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeGoats.map((goat) => (
-                      <SelectItem key={goat.id} value={goat.id}>
-                        {goat.name} (Tag #{goat.tagNumber})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {selectedGoat && (
-            <IndividualGoatAnalysis 
-              goat={selectedGoat} 
-              weightRecords={getGoatWeightHistory(selectedGoat.id)}
-              performance={growthPerformances.find(p => p.goatId === selectedGoat.id)}
-            />
-          )}
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Breed Comparison */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Breed Performance Comparison</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={Object.entries(analytics.breedComparison).map(([breed, score]) => ({ breed, score }))}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="breed" fontSize={12} />
-                      <YAxis fontSize={12} />
-                      <Tooltip />
-                      <Bar dataKey="score" fill="hsl(var(--primary))" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Performance Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Above Standard (>110%)', count: growthPerformances.filter(p => p.currentScore >= 110).length, color: 'bg-green-500' },
-                    { label: 'On Track (90-110%)', count: growthPerformances.filter(p => p.currentScore >= 90 && p.currentScore < 110).length, color: 'bg-blue-500' },
-                    { label: 'Below Standard (70-90%)', count: growthPerformances.filter(p => p.currentScore >= 70 && p.currentScore < 90).length, color: 'bg-yellow-500' },
-                    { label: 'Concerning (<70%)', count: growthPerformances.filter(p => p.currentScore < 70).length, color: 'bg-red-500' },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-4 h-4 rounded ${item.color}`} />
-                        <span className="text-sm">{item.label}</span>
-                      </div>
-                      <span className="font-medium">{item.count}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Insights Tab */}
-        <TabsContent value="insights" className="space-y-6">
-          <div className="space-y-4">
-            {insights.length > 0 ? (
-              insights.map((insight, index) => (
-                <Card key={index} className={`border-l-4 ${
-                  insight.severity === 'critical' ? 'border-l-red-500' :
-                  insight.severity === 'high' ? 'border-l-orange-500' :
-                  insight.severity === 'medium' ? 'border-l-yellow-500' :
-                  'border-l-blue-500'
-                }`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className={`p-2 rounded-full ${
-                        insight.type === 'alert' ? 'bg-red-100 text-red-600' :
-                        insight.type === 'warning' ? 'bg-orange-100 text-orange-600' :
-                        insight.type === 'suggestion' ? 'bg-yellow-100 text-yellow-600' :
-                        'bg-blue-100 text-blue-600'
-                      }`}>
-                        {insight.type === 'alert' && <AlertTriangle className="h-4 w-4" />}
-                        {insight.type === 'warning' && <AlertTriangle className="h-4 w-4" />}
-                        {insight.type === 'suggestion' && <TrendingUp className="h-4 w-4" />}
-                        {insight.type === 'info' && <CheckCircle className="h-4 w-4" />}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-foreground">{insight.title}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">{insight.description}</p>
-                        <div className="mt-2 p-2 bg-muted rounded-md">
-                          <p className="text-sm font-medium">Action: {insight.action}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">All Good!</h3>
-                  <p className="text-muted-foreground">
-                    No critical growth issues detected. Keep monitoring your goats regularly.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-interface IndividualGoatAnalysisProps {
-  goat: any;
-  weightRecords: any[];
-  performance?: any;
-}
-
-function IndividualGoatAnalysis({ goat, weightRecords, performance }: IndividualGoatAnalysisProps) {
-  const ageMonths = GrowthAI.calculateAgeInMonths(goat.dateOfBirth);
-  const expectedWeight = GrowthAI.getExpectedWeight(ageMonths, GrowthAI.DEFAULT_BREED_STANDARDS[goat.breed.toLowerCase()]);
-  const latestWeight = weightRecords.length > 0 ? weightRecords[weightRecords.length - 1].weight : 0;
-
-  // Prepare chart data with breed standard
-  const chartData = weightRecords.map(record => ({
-    date: new Date(record.date).toLocaleDateString(),
-    actual: record.weight,
-    expected: GrowthAI.getExpectedWeight(
-      GrowthAI.calculateAgeInMonths(goat.dateOfBirth, new Date(record.date)),
-      GrowthAI.DEFAULT_BREED_STANDARDS[goat.breed.toLowerCase()]
-    )
-  }));
+  const getExpectedWeight = (breedStandard: BreedStandard, ageInMonths: number): number => {
+    const milestones = breedStandard.milestones.sort((a, b) => a.ageMonths - b.ageMonths);
+    
+    // Find the closest milestone or interpolate
+    const exactMatch = milestones.find(m => m.ageMonths === ageInMonths);
+    if (exactMatch) return exactMatch.expectedWeight;
+    
+    // Interpolate between two milestones
+    const nextMilestone = milestones.find(m => m.ageMonths > ageInMonths);
+    const prevMilestone = milestones.slice().reverse().find(m => m.ageMonths < ageInMonths);
+    
+    if (nextMilestone && prevMilestone) {
+      const ratio = (ageInMonths - prevMilestone.ageMonths) / (nextMilestone.ageMonths - prevMilestone.ageMonths);
+      return prevMilestone.expectedWeight + (nextMilestone.expectedWeight - prevMilestone.expectedWeight) * ratio;
+    }
+    
+    if (prevMilestone) return prevMilestone.expectedWeight;
+    if (nextMilestone) return nextMilestone.expectedWeight;
+    
+    return 0;
+  };
 
   return (
     <div className="space-y-6">
-      {/* Performance Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-2">
-                {performance?.currentScore || 0}%
-              </div>
-              <p className="text-sm text-muted-foreground">Growth Performance Score</p>
-              <div className="mt-2">
-                <Progress value={Math.min(performance?.currentScore || 0, 100)} className="h-2" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold mb-2">
-                {latestWeight} kg
-              </div>
-              <p className="text-sm text-muted-foreground">Current Weight</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Expected: {expectedWeight.toFixed(1)} kg
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                {performance?.trend === 'improving' && <TrendingUp className="h-5 w-5 text-green-500" />}
-                {performance?.trend === 'declining' && <TrendingDown className="h-5 w-5 text-red-500" />}
-                {performance?.trend === 'stable' && <Activity className="h-5 w-5 text-blue-500" />}
-                <span className="text-lg font-medium capitalize">
-                  {performance?.trend || 'Unknown'}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">Growth Trend</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div>
+        <h2 className="text-2xl font-bold">Growth Optimizer</h2>
+        <p className="text-muted-foreground">
+          Optimize growth performance based on breed standards
+        </p>
       </div>
 
-      {/* Growth Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Growth Chart vs Breed Standard</CardTitle>
+          <CardTitle>Select Goat</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" fontSize={12} />
-                <YAxis fontSize={12} />
-                <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="actual" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                  name="Actual Weight"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="expected" 
-                  stroke="hsl(var(--muted-foreground))" 
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 3 }}
-                  name="Expected Weight"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <Select onValueChange={handleGoatSelect}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a goat" />
+            </SelectTrigger>
+            <SelectContent>
+              {goats.map((goat) => (
+                <SelectItem key={goat.id} value={goat.id}>
+                  {goat.name} ({goat.breed})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
-      {/* Recommendations */}
-      {performance?.recommendations && (
+      {selectedGoat && (
         <Card>
           <CardHeader>
-            <CardTitle>Growth Recommendations</CardTitle>
+            <CardTitle>Growth Performance for {selectedGoat.name}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {performance.recommendations.map((rec: string, index: number) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-muted rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-primary mt-0.5" />
-                  <p className="text-sm">{rec}</p>
-                </div>
-              ))}
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label>Breed Standard</Label>
+              <Select onValueChange={handleBreedStandardChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder={breedStandard.breedName} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(BREED_STANDARDS).map(([key, breed]) => (
+                    <SelectItem key={key} value={breed.breedName}>
+                      {breed.breedName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {growthPerformance ? (
+              <>
+                <p>
+                  <strong>Growth Performance Score:</strong> {growthPerformance.currentScore}
+                </p>
+                <p>
+                  <strong>Status:</strong> {growthPerformance.status}
+                </p>
+                <div>
+                  <strong>Recommendations:</strong>
+                  <ul>
+                    {growthPerformance.recommendations.map((rec, index) => (
+                      <li key={index}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <p>No weight data available for this goat.</p>
+            )}
           </CardContent>
         </Card>
       )}
