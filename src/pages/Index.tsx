@@ -10,6 +10,7 @@ import { HealthDashboard } from '@/components/HealthDashboard';
 import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { loadSampleData } from '@/data/sampleData';
 import { FinanceDashboard } from '@/components/FinanceDashboard';
+import { BackupManager } from '@/components/BackupManager';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -45,6 +46,8 @@ const Index = () => {
         return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
       case 'finance':
         return <FinanceDashboard />;
+      case 'backup':
+        return <BackupManager />;
       case 'export':
       case 'import':
       case 'settings':

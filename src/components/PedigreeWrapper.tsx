@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { PedigreeTree } from './PedigreeTree';
 import { PedigreeSidebar } from './PedigreeSidebar';
-import { useGoatData } from '@/hooks/useDatabase';
+import { useGoatContext } from '@/context/GoatContext';
+import { Goat } from '@/types/goat';
 
 interface PedigreeWrapperProps {
   onShowHealth: (goatId: string) => void;
@@ -10,35 +11,39 @@ interface PedigreeWrapperProps {
 }
 
 export function PedigreeWrapper({ onShowHealth, onShowWeight }: PedigreeWrapperProps) {
-  const [selectedGoatId, setSelectedGoatId] = useState<string | undefined>();
-  const { goats } = useGoatData();
+  const { goats } = useGoatContext();
+  const [selectedGoat, setSelectedGoat] = useState<Goat | null>(
+    goats.length > 0 ? goats[0] : null
+  );
 
-  const handleGoatSelect = (goatId: string) => {
-    setSelectedGoatId(goatId);
+  const handleGoatSelect = (goat: Goat) => {
+    setSelectedGoat(goat);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Pedigree Tree</h1>
-        <div className="text-sm text-gray-500">
-          {goats.length} goats in database
-        </div>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">Pedigree Tree</h2>
+        <p className="text-muted-foreground">
+          Explore lineage and genetic relationships in your herd
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      {/* Main Content */}
+      <div className="flex gap-6">
+        <div className="flex-1">
           <PedigreeTree
-            selectedGoatId={selectedGoatId}
+            goats={goats}
+            selectedGoatId={selectedGoat?.id || ''}
             onGoatSelect={handleGoatSelect}
             onShowHealth={onShowHealth}
             onShowWeight={onShowWeight}
           />
         </div>
-
-        <div className="lg:col-span-1">
+        <div className="flex-shrink-0">
           <PedigreeSidebar
-            selectedGoatId={selectedGoatId}
+            goat={selectedGoat}
             onShowHealth={onShowHealth}
             onShowWeight={onShowWeight}
           />

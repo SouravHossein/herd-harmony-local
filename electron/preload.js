@@ -46,6 +46,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (filePath, data) => ipcRenderer.invoke('fs:writeFile', filePath, data),
   readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
 
+  // Backup operations
+  createBackup: (password) => ipcRenderer.invoke('backup:create', password),
+  restoreBackup: (backupId, password) => ipcRenderer.invoke('backup:restore', backupId, password),
+  getBackupFiles: () => ipcRenderer.invoke('backup:getFiles'),
+  deleteBackup: (backupId) => ipcRenderer.invoke('backup:delete', backupId),
+  getBackupSettings: () => ipcRenderer.invoke('backup:getSettings'),
+  saveBackupSettings: (settings) => ipcRenderer.invoke('backup:saveSettings', settings),
+  selectBackupPath: () => ipcRenderer.invoke('backup:selectPath'),
+
   // Check if running in Electron
   isElectron: true
 });

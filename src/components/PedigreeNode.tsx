@@ -1,110 +1,99 @@
 
 import React from 'react';
-import { Handle, Position, NodeProps } from '@xyflow/react';
-import { Heart, Weight, User, Calendar } from 'lucide-react';
+import { NodeProps, Node } from '@xyflow/react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Heart, Weight, Calendar, Info } from 'lucide-react';
 import { Goat } from '@/types/goat';
-import { calculateAge } from '@/lib/utils';
 
 interface GoatNodeData {
   goat: Goat;
-  onClick?: () => void;
-  onShowHealth?: (goatId: string) => void;
-  onShowWeight?: (goatId: string) => void;
+  onClick: (goat: Goat) => void;
+  onShowHealth: (goatId: string) => void;
+  onShowWeight: (goatId: string) => void;
 }
 
-export function PedigreeNode({ data, selected }: NodeProps<GoatNodeData>) {
+type GoatNode = Node<GoatNodeData>;
+
+export function PedigreeNode({ data, selected }: NodeProps<GoatNode>) {
   const { goat, onClick, onShowHealth, onShowWeight } = data;
-  
+
+  const getGenderColor = (gender: string) => {
+    return gender === 'male' ? 'bg-blue-500' : 'bg-pink-500';
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'border-green-500';
-      case 'deceased': return 'border-gray-500';
-      case 'sold': return 'border-blue-500';
-      default: return 'border-gray-300';
+      case 'active': return 'bg-green-500';
+      case 'sold': return 'bg-yellow-500';
+      case 'deceased': return 'bg-red-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  const getGenderIcon = (gender: string) => {
-    return gender === 'male' ? '♂' : '♀';
-  };
-
-  const getStatusBadge = (status: string) => {
-    const colors = {
-      active: 'bg-green-100 text-green-800',
-      deceased: 'bg-gray-100 text-gray-800',
-      sold: 'bg-blue-100 text-blue-800'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
-
   return (
-    <div className={`
-      bg-white rounded-lg shadow-md border-2 p-3 min-w-[200px] cursor-pointer
-      ${getStatusColor(goat.status)}
-      ${selected ? 'ring-2 ring-blue-400' : ''}
-      hover:shadow-lg transition-shadow
-    `}>
-      <Handle type="target" position={Position.Top} />
-      
-      <div 
-        className="flex items-center space-x-2 mb-2"
-        onClick={onClick}
-      >
-        <div className={`
-          w-8 h-8 rounded-full flex items-center justify-center text-white font-bold
-          ${goat.gender === 'male' ? 'bg-blue-500' : 'bg-pink-500'}
-        `}>
-          {getGenderIcon(goat.gender)}
+    <Card className={`w-64 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm truncate">{goat.name}</h3>
+            <p className="text-xs text-muted-foreground">#{goat.tagNumber}</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Badge 
+              className={`${getGenderColor(goat.gender)} text-white text-xs px-2 py-1`}
+            >
+              {goat.gender}
+            </Badge>
+            <Badge 
+              className={`${getStatusColor(goat.status)} text-white text-xs px-2 py-1`}
+            >
+              {goat.status}
+            </Badge>
+          </div>
         </div>
-        <span className={`
-          px-2 py-1 rounded-full text-xs font-medium
-          ${getStatusBadge(goat.status)}
-        `}>
-          {goat.status}
-        </span>
-      </div>
 
-      <div className="space-y-1">
-        <h3 className="font-semibold text-sm text-gray-800">{goat.name}</h3>
-        <p className="text-xs text-gray-600">{goat.breed}</p>
-        <p className="text-xs text-gray-500">
-          {calculateAge(goat.dateOfBirth)}
-        </p>
-      </div>
+        <div className="space-y-1 mb-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {new Date(goat.dateOfBirth).toLocaleDateString()}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {goat.breed} • {goat.color}
+          </div>
+        </div>
 
-      <div className="flex justify-between mt-2 space-x-1">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onShowHealth?.(goat.id);
-          }}
-          className="flex items-center space-x-1 px-2 py-1 bg-red-50 text-red-600 rounded text-xs hover:bg-red-100"
-        >
-          <Heart className="w-3 h-3" />
-        </button>
-        
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onShowWeight?.(goat.id);
-          }}
-          className="flex items-center space-x-1 px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs hover:bg-blue-100"
-        >
-          <Weight className="w-3 h-3" />
-        </button>
-        
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-          className="flex items-center space-x-1 px-2 py-1 bg-gray-50 text-gray-600 rounded text-xs hover:bg-gray-100"
-        >
-          <User className="w-3 h-3" />
-        </button>
-      </div>
-
-      <Handle type="source" position={Position.Bottom} />
-    </div>
+        <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onClick(goat)}
+            className="flex-1 h-8 text-xs"
+          >
+            <Info className="h-3 w-3 mr-1" />
+            Info
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onShowHealth(goat.id)}
+            className="h-8 px-2"
+          >
+            <Heart className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onShowWeight(goat.id)}
+            className="h-8 px-2"
+          >
+            <Weight className="h-3 w-3" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

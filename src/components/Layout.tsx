@@ -30,8 +30,7 @@ export function Layout({ children, currentPage, onPageChange }: LayoutProps) {
     { id: 'health-ai', label: 'Health AI', icon: Bot },
     { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
     { id: 'finance', label: 'Finance', icon: DollarSign },
-    { id: 'export', label: 'Export', icon: Download },
-    { id: 'import', label: 'Import', icon: Upload },
+    { id: 'backup', label: 'Backup', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

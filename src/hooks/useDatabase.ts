@@ -48,6 +48,15 @@ declare global {
       writeFile: (filePath: string, data: string) => Promise<boolean>;
       readFile: (filePath: string) => Promise<string | null>;
       
+      // Backup operations
+      createBackup: (password: string) => Promise<{ success: boolean; filename?: string; error?: string }>;
+      restoreBackup: (backupId: string, password: string) => Promise<{ success: boolean; error?: string }>;
+      getBackupFiles: () => Promise<any[]>;
+      deleteBackup: (backupId: string) => Promise<boolean>;
+      getBackupSettings: () => Promise<any>;
+      saveBackupSettings: (settings: any) => Promise<boolean>;
+      selectBackupPath: () => Promise<{ path?: string; canceled?: boolean }>;
+      
       isElectron: boolean;
     };
   }

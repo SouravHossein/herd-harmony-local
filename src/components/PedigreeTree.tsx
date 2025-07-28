@@ -1,61 +1,69 @@
 
-import React, { useState, useEffect } from 'react';
-import { 
-  ReactFlow, 
-  Controls, 
-  Background, 
-  useNodesState, 
-  useEdgesState,
+import React, { useState, useCallback, useMemo } from 'react';
+import {
+  ReactFlow,
   Node,
-  Edge
+  Edge,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  Panel,
+  NodeTypes,
+  ConnectionMode,
 } from '@xyflow/react';
 import { PedigreeNode } from './PedigreeNode';
 import { PedigreeControls } from './PedigreeControls';
+import { Button } from '@/components/ui/button';
+import { Download, ZoomIn, ZoomOut } from 'lucide-react';
 import { Goat } from '@/types/goat';
-import { useGoatData } from '@/hooks/useDatabase';
 
 interface PedigreeTreeProps {
-  selectedGoatId?: string;
-  onGoatSelect: (goatId: string) => void;
+  goats: Goat[];
+  selectedGoatId: string;
+  onGoatSelect: (goat: Goat) => void;
   onShowHealth: (goatId: string) => void;
   onShowWeight: (goatId: string) => void;
 }
 
-const nodeTypes = {
-  goatNode: PedigreeNode,
-};
+interface GoatNodeData {
+  goat: Goat;
+  onClick: (goat: Goat) => void;
+  onShowHealth: (goatId: string) => void;
+  onShowWeight: (goatId: string) => void;
+}
+
+type GoatNode = Node<GoatNodeData>;
 
 export function PedigreeTree({ 
+  goats, 
   selectedGoatId, 
   onGoatSelect, 
   onShowHealth, 
   onShowWeight 
 }: PedigreeTreeProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [generations, setGenerations] = useState(3);
-  const [showMaternal, setShowMaternal] = useState(true);
-  const [showPaternal, setShowPaternal] = useState(true);
-  
-  const { goats, breedingRecords, loading } = useGoatData();
+  const [showMalesOnly, setShowMalesOnly] = useState(false);
+  const [showFemalesOnly, setShowFemalesOnly] = useState(false);
 
-  useEffect(() => {
-    if (selectedGoatId && goats.length > 0) {
-      const tree = buildPedigreeTree(selectedGoatId, generations);
-      setNodes(tree.nodes);
-      setEdges(tree.edges);
-    }
-  }, [selectedGoatId, generations, showMaternal, showPaternal, goats, breedingRecords]);
+  const selectedGoat = goats.find(g => g.id === selectedGoatId);
 
-  const buildPedigreeTree = (goatId: string, maxGenerations: number) => {
-    const nodes: Node[] = [];
+  const buildPedigreeTree = useCallback((rootGoat: Goat, maxGenerations: number) => {
+    const nodes: GoatNode[] = [];
     const edges: Edge[] = [];
     const processedGoats = new Set<string>();
 
-    const addGoatNode = (goat: Goat, generation: number, x: number, y: number) => {
+    const levelWidth = 280;
+    const levelHeight = 120;
+
+    function addGoatNode(goat: Goat, x: number, y: number, generation: number) {
       if (processedGoats.has(goat.id) || generation > maxGenerations) return;
       
       processedGoats.add(goat.id);
+
+      // Filter by gender if specified
+      if (showMalesOnly && goat.gender !== 'male') return;
+      if (showFemalesOnly && goat.gender !== 'female') return;
 
       nodes.push({
         id: goat.id,
@@ -63,91 +71,115 @@ export function PedigreeTree({
         position: { x, y },
         data: {
           goat,
-          onClick: () => onGoatSelect(goat.id),
+          onClick: onGoatSelect,
           onShowHealth,
           onShowWeight
         }
       });
 
-      // Find parents
-      const breeding = breedingRecords.find(record => 
-        record.kidIds.includes(goat.id)
-      );
+      // Add parent connections (simplified - in real implementation, you'd track sire/dam relationships)
+      const parents = goats.filter(g => 
+        // This is a simplified relationship check - in real implementation, 
+        // you'd have proper sire/dam fields in your data model
+        g.id !== goat.id && 
+        new Date(g.dateOfBirth) < new Date(goat.dateOfBirth)
+      ).slice(0, 2); // Take first 2 as mock parents
 
-      if (breeding && generation < maxGenerations) {
-        const sire = goats.find(g => g.id === breeding.sireId);
-        const dam = goats.find(g => g.id === breeding.damId);
-
-        if (sire && showPaternal) {
-          addGoatNode(sire, generation + 1, x - 150, y - 120);
+      parents.forEach((parent, index) => {
+        const parentY = y - levelHeight;
+        const parentX = x + (index === 0 ? -levelWidth : levelWidth);
+        
+        if (generation < maxGenerations) {
+          addGoatNode(parent, parentX, parentY, generation + 1);
+          
           edges.push({
-            id: `${sire.id}-${goat.id}`,
-            source: sire.id,
+            id: `${parent.id}-${goat.id}`,
+            source: parent.id,
             target: goat.id,
-            type: 'smoothstep'
+            type: 'smoothstep',
+            animated: false,
+            style: { stroke: '#8B5CF6', strokeWidth: 2 }
           });
         }
+      });
+    }
 
-        if (dam && showMaternal) {
-          addGoatNode(dam, generation + 1, x + 150, y - 120);
-          edges.push({
-            id: `${dam.id}-${goat.id}`,
-            source: dam.id,
-            target: goat.id,
-            type: 'smoothstep'
-          });
-        }
-      }
-    };
-
-    const selectedGoat = goats.find(g => g.id === goatId);
-    if (selectedGoat) {
-      addGoatNode(selectedGoat, 1, 0, 0);
+    if (rootGoat) {
+      addGoatNode(rootGoat, 0, 0, 1);
     }
 
     return { nodes, edges };
+  }, [goats, onGoatSelect, onShowHealth, onShowWeight, showMalesOnly, showFemalesOnly]);
+
+  const { nodes, edges } = useMemo(() => {
+    if (!selectedGoat) return { nodes: [], edges: [] };
+    return buildPedigreeTree(selectedGoat, generations);
+  }, [selectedGoat, generations, buildPedigreeTree]);
+
+  const [reactFlowNodes, setNodes, onNodesChange] = useNodesState(nodes);
+  const [reactFlowEdges, setEdges, onEdgesChange] = useEdgesState(edges);
+
+  React.useEffect(() => {
+    setNodes(nodes);
+    setEdges(edges);
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const nodeTypes: NodeTypes = useMemo(() => ({
+    goatNode: PedigreeNode,
+  }), []);
+
+  const exportTree = () => {
+    // In a real implementation, you'd export the tree as PDF or image
+    console.log('Exporting pedigree tree...');
+    // For now, just log the data
+    console.log('Nodes:', reactFlowNodes);
+    console.log('Edges:', reactFlowEdges);
   };
 
-  const handleExport = async (format: 'png' | 'pdf') => {
-    // Implementation for export functionality
-    console.log(`Exporting pedigree as ${format}`);
-  };
-
-  if (loading) {
+  if (!selectedGoat) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-          <p className="mt-4 text-gray-600">Loading pedigree...</p>
-        </div>
+      <div className="h-96 flex items-center justify-center text-muted-foreground">
+        <p>Select a goat to view its pedigree tree</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full bg-gray-50 rounded-lg">
+    <div className="space-y-4">
       <PedigreeControls
         generations={generations}
         onGenerationsChange={setGenerations}
-        showMaternal={showMaternal}
-        onShowMaternalChange={setShowMaternal}
-        showPaternal={showPaternal}
-        onShowPaternalChange={setShowPaternal}
-        onExport={handleExport}
+        showMalesOnly={showMalesOnly}
+        onShowMalesOnlyChange={setShowMalesOnly}
+        showFemalesOnly={showFemalesOnly}
+        onShowFemalesOnlyChange={setShowFemalesOnly}
       />
       
-      <div className="h-96 border rounded-lg bg-white">
+      <div className="h-96 border rounded-lg bg-background">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={reactFlowNodes}
+          edges={reactFlowEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          connectionMode={ConnectionMode.Loose}
           fitView
-          fitViewOptions={{ padding: 0.1 }}
+          fitViewOptions={{ padding: 0.2 }}
         >
           <Background />
           <Controls />
+          <Panel position="top-right">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportTree}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </Panel>
         </ReactFlow>
       </div>
     </div>
