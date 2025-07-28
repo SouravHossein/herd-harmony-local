@@ -11,9 +11,9 @@ import { BackupManager } from '@/components/BackupManager';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
 import { HealthAI } from '@/components/HealthAI';
-import { GrowthOptimizer } from '@/components/GrowthOptimizer';
+import GrowthOptimizer from '@/components/GrowthOptimizer';
 import BreedingPlanner from '@/components/breeding/BreedingPlanner';
-import { GoatContextProvider } from '@/context/GoatContext';
+import { GoatProvider } from '@/context/GoatContext';
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -58,10 +58,10 @@ export default function Index() {
   };
 
   return (
-    <GoatContextProvider>
+    <GoatProvider>
       <Layout activeSection={activeSection} onSectionChange={setActiveSection}>
         {renderContent()}
       </Layout>
-    </GoatContextProvider>
+    </GoatProvider>
   );
 }

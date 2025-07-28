@@ -10,6 +10,28 @@ export interface HeatCycle {
   createdAt: Date;
 }
 
+
+export interface KidDetail {
+  id: string;
+  name: string;
+  gender: 'male' | 'female';
+  birthWeight: number;
+  status: 'alive' | 'deceased' | 'weak';
+  notes?: string;
+}
+
+export interface KiddingRecord {
+  id: string;
+  breedingId: string;
+  birthDate: Date;
+  totalKids: number;
+  kidDetails: KidDetail[];
+  complications?: string;
+  vetAssistance: boolean;
+  notes?: string;
+  createdAt: Date;
+}
+
 export interface BreedingRecord {
   id: string;
   damId: string;
@@ -19,28 +41,10 @@ export interface BreedingRecord {
   pregnancyStatus: 'pending' | 'confirmed' | 'not_pregnant' | 'aborted';
   expectedDueDate?: Date;
   actualBirthDate?: Date;
+  kidDetails?: KidDetail[];
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface KiddingRecord {
-  id: string;
-  breedingId: string;
-  birthDate: Date;
-  totalKids: number;
-  kidDetails: Array<{
-    id: string;
-    name: string;
-    gender: 'male' | 'female';
-    birthWeight: number;
-    status: 'alive' | 'deceased' | 'weak';
-    notes?: string;
-  }>;
-  complications?: string;
-  vetAssistance: boolean;
-  notes?: string;
-  createdAt: Date;
 }
 
 export interface BreedingAlert {

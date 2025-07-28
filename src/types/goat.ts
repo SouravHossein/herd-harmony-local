@@ -8,6 +8,8 @@ export interface Goat {
   color: string;
   status: 'active' | 'sold' | 'deceased';
   hornStatus: 'horned' | 'polled' | 'disbudded';
+  fatherId?: string;
+  motherId?: string;
   photoPath?: string;
   notes?: string;
   createdAt: Date;
@@ -75,15 +77,17 @@ export interface Feed {
   updatedAt: Date;
 }
 
+export interface FeedPlanItem {
+  feedId: string;
+  amountPerDay: number; // in kg
+  frequency: number; // times per day
+}
+
 export interface FeedPlan {
   id: string;
   name: string;
   groupType: 'kids' | 'adults' | 'lactating' | 'bucks' | 'pregnant';
-  feedItems: Array<{
-    feedId: string;
-    amountPerDay: number; // in kg
-    frequency: number; // times per day
-  }>;
+  feedItems: FeedPlanItem[];
   totalCostPerDay: number;
   createdAt: Date;
   updatedAt: Date;

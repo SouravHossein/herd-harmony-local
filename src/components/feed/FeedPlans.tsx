@@ -1,70 +1,55 @@
-
 import React, { useState, useEffect } from 'react';
-import { useGoatData } from '@/hooks/useDatabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Calculator, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FeedPlan, FeedPlanItem } from '@/types/goat';
-import { useToast } from '@/hooks/use-toast';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { PlusCircle, Edit, Trash2, Save, X, Calendar } from 'lucide-react';
+import { Feed, FeedPlan, FeedPlanItem } from '@/types/goat';
+import { toast } from 'sonner';
 
-export function FeedPlans() {
-  const { feeds, feedPlans, goats, addFeedPlan, updateFeedPlan, deleteFeedPlan } = useGoatData();
+interface FeedPlansProps {
+  feeds: Feed[];
+  feedPlans: FeedPlan[];
+  onAddFeedPlan: (plan: Omit<FeedPlan, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onUpdateFeedPlan: (id: string, updates: Partial<FeedPlan>) => void;
+  onDeleteFeedPlan: (id: string) => void;
+}
+
+export default function FeedPlans({ feeds, feedPlans, onAddFeedPlan, onUpdateFeedPlan, onDeleteFeedPlan }: FeedPlansProps) {
   const [selectedPlan, setSelectedPlan] = useState<FeedPlan | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('plans');
-  const { toast } = useToast();
-
-  // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<FeedPlan, 'id' | 'createdAt' | 'updatedAt'>>({
     name: '',
-    category: 'adult',
-    description: '',
-    feedItems: [] as FeedPlanItem[],
-    isActive: true,
-    totalCostPerDay: 0,
-    totalCostPerMonth: 0
+    groupType: 'adults',
+    feedItems: [],
+    totalCostPerDay: 0
   });
 
   const [newFeedItem, setNewFeedItem] = useState({
     feedId: '',
     amountPerDay: 0,
-    notes: ''
+    frequency: 1
   });
 
+  // Calculate total cost when feed items change
   useEffect(() => {
-    calculateTotalCost();
-  }, [formData.feedItems]);
-
-  const calculateTotalCost = () => {
-    let dailyCost = 0;
-    formData.feedItems.forEach(item => {
+    const totalCost = formData.feedItems.reduce((sum, item) => {
       const feed = feeds.find(f => f.id === item.feedId);
-      if (feed) {
-        dailyCost += feed.costPerKg * item.amountPerDay;
-      }
-    });
-    setFormData(prev => ({
-      ...prev,
-      totalCostPerDay: dailyCost,
-      totalCostPerMonth: dailyCost * 30
-    }));
-  };
+      return sum + (feed ? feed.costPerKg * item.amountPerDay : 0);
+    }, 0);
+    
+    setFormData(prev => ({ ...prev, totalCostPerDay: totalCost }));
+  }, [formData.feedItems, feeds]);
 
-  const handleAddFeedItem = () => {
+  const addFeedToList = () => {
     if (!newFeedItem.feedId || newFeedItem.amountPerDay <= 0) {
-      toast({
-        title: "Error",
-        description: "Please select a feed and enter a valid amount",
-        variant: "destructive"
-      });
+      toast.error('Please select a feed and enter valid amount');
       return;
     }
 
@@ -72,12 +57,9 @@ export function FeedPlans() {
     if (!feed) return;
 
     const feedItem: FeedPlanItem = {
-      id: Date.now().toString(),
       feedId: newFeedItem.feedId,
-      feedName: feed.name,
       amountPerDay: newFeedItem.amountPerDay,
-      costPerDay: feed.costPerKg * newFeedItem.amountPerDay,
-      notes: newFeedItem.notes
+      frequency: newFeedItem.frequency
     };
 
     setFormData(prev => ({
@@ -85,278 +67,240 @@ export function FeedPlans() {
       feedItems: [...prev.feedItems, feedItem]
     }));
 
-    setNewFeedItem({
-      feedId: '',
-      amountPerDay: 0,
-      notes: ''
-    });
+    setNewFeedItem({ feedId: '', amountPerDay: 0, frequency: 1 });
+    toast.success('Feed added to plan');
   };
 
-  const handleRemoveFeedItem = (itemId: string) => {
+  const removeFeedFromList = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      feedItems: prev.feedItems.filter(item => item.id !== itemId)
+      feedItems: prev.feedItems.filter((_, i) => i !== index)
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || formData.feedItems.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please enter a plan name and add at least one feed item",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const planData = {
-      ...formData,
-      id: selectedPlan?.id || Date.now().toString(),
-      createdAt: selectedPlan?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
     try {
       if (selectedPlan) {
-        await updateFeedPlan(selectedPlan.id, planData);
-        toast({
-          title: "Success",
-          description: "Feed plan updated successfully"
-        });
+        await onUpdateFeedPlan(selectedPlan.id, formData);
+        toast.success('Feed plan updated successfully');
       } else {
-        await addFeedPlan(planData);
-        toast({
-          title: "Success",
-          description: "Feed plan created successfully"
-        });
+        await onAddFeedPlan(formData);
+        toast.success('Feed plan created successfully');
       }
+      
       resetForm();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save feed plan",
-        variant: "destructive"
-      });
+      toast.error('Failed to save feed plan');
     }
   };
 
   const resetForm = () => {
     setFormData({
       name: '',
-      category: 'adult',
-      description: '',
+      groupType: 'adults',
       feedItems: [],
-      isActive: true,
-      totalCostPerDay: 0,
-      totalCostPerMonth: 0
+      totalCostPerDay: 0
     });
+    setNewFeedItem({ feedId: '', amountPerDay: 0, frequency: 1 });
     setSelectedPlan(null);
     setIsFormOpen(false);
   };
 
   const handleEdit = (plan: FeedPlan) => {
     setSelectedPlan(plan);
-    setFormData(plan);
+    setFormData({
+      name: plan.name,
+      groupType: plan.groupType,
+      feedItems: plan.feedItems,
+      totalCostPerDay: plan.totalCostPerDay
+    });
     setIsFormOpen(true);
   };
 
   const handleDelete = async (planId: string) => {
     if (window.confirm('Are you sure you want to delete this feed plan?')) {
       try {
-        await deleteFeedPlan(planId);
-        toast({
-          title: "Success",
-          description: "Feed plan deleted successfully"
-        });
+        await onDeleteFeedPlan(planId);
+        toast.success('Feed plan deleted successfully');
       } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete feed plan",
-          variant: "destructive"
-        });
+        toast.error('Failed to delete feed plan');
       }
     }
   };
 
-  const activePlans = feedPlans.filter(plan => plan.isActive);
-  const inactivePlans = feedPlans.filter(plan => !plan.isActive);
+  const groupTypeColors = {
+    kids: 'bg-blue-100 text-blue-800',
+    adults: 'bg-green-100 text-green-800',
+    lactating: 'bg-pink-100 text-pink-800',
+    bucks: 'bg-purple-100 text-purple-800',
+    pregnant: 'bg-orange-100 text-orange-800'
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Feed Plans</h2>
+        <div>
+          <h3 className="text-lg font-semibold">Feed Plans</h3>
+          <p className="text-sm text-muted-foreground">
+            Create and manage feeding schedules for different goat groups
+          </p>
+        </div>
+        
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => resetForm()}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Feed Plan
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Create Feed Plan
             </Button>
           </DialogTrigger>
+          
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {selectedPlan ? 'Edit Feed Plan' : 'Create New Feed Plan'}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="name">Plan Name</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., Adult Doe Standard"
+                    placeholder="e.g., Lactating Does Summer Plan"
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="groupType">Group Type</Label>
+                  <Select
+                    value={formData.groupType}
+                    onValueChange={(value: any) => setFormData(prev => ({ ...prev, groupType: value }))}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="kid">Kid (0-6 months)</SelectItem>
-                      <SelectItem value="young">Young (6-12 months)</SelectItem>
-                      <SelectItem value="adult">Adult (12+ months)</SelectItem>
-                      <SelectItem value="pregnant">Pregnant Doe</SelectItem>
-                      <SelectItem value="lactating">Lactating Doe</SelectItem>
-                      <SelectItem value="breeding">Breeding Buck</SelectItem>
+                      <SelectItem value="kids">Kids</SelectItem>
+                      <SelectItem value="adults">Adults</SelectItem>
+                      <SelectItem value="lactating">Lactating Does</SelectItem>
+                      <SelectItem value="bucks">Bucks</SelectItem>
+                      <SelectItem value="pregnant">Pregnant Does</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe the feeding plan..."
-                  rows={3}
-                />
-              </div>
-
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Feed Items</h3>
-                  <Badge variant="secondary">
-                    Daily Cost: ${formData.totalCostPerDay.toFixed(2)}
-                  </Badge>
+                <h4 className="font-medium">Feed Items</h4>
+                
+                {/* Add new feed item */}
+                <div className="grid grid-cols-4 gap-2 items-end">
+                  <div className="space-y-2">
+                    <Label>Feed</Label>
+                    <Select
+                      value={newFeedItem.feedId}
+                      onValueChange={(value) => setNewFeedItem(prev => ({ ...prev, feedId: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select feed" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {feeds.map(feed => (
+                          <SelectItem key={feed.id} value={feed.id}>
+                            {feed.name} (${feed.costPerKg}/kg)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Amount (kg/day)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={newFeedItem.amountPerDay}
+                      onChange={(e) => setNewFeedItem(prev => ({ ...prev, amountPerDay: parseFloat(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Frequency</Label>
+                    <Select
+                      value={newFeedItem.frequency.toString()}
+                      onValueChange={(value) => setNewFeedItem(prev => ({ ...prev, frequency: parseInt(value) }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1x daily</SelectItem>
+                        <SelectItem value="2">2x daily</SelectItem>
+                        <SelectItem value="3">3x daily</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button type="button" onClick={addFeedToList}>
+                    Add
+                  </Button>
                 </div>
 
-                {/* Add Feed Item Form */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Add Feed Item</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label>Feed</Label>
-                        <Select 
-                          value={newFeedItem.feedId} 
-                          onValueChange={(value) => setNewFeedItem(prev => ({ ...prev, feedId: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select feed" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {feeds.map(feed => (
-                              <SelectItem key={feed.id} value={feed.id}>
-                                {feed.name} (${feed.costPerKg}/kg)
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Amount per Day (kg)</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={newFeedItem.amountPerDay}
-                          onChange={(e) => setNewFeedItem(prev => ({ ...prev, amountPerDay: parseFloat(e.target.value) || 0 }))}
-                          placeholder="0.0"
-                        />
-                      </div>
-                      <div>
-                        <Label>Notes</Label>
-                        <Input
-                          value={newFeedItem.notes}
-                          onChange={(e) => setNewFeedItem(prev => ({ ...prev, notes: e.target.value }))}
-                          placeholder="Optional notes"
-                        />
-                      </div>
-                    </div>
-                    <Button type="button" onClick={handleAddFeedItem}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Feed Item
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Feed Items List */}
+                {/* Current feed items */}
                 {formData.feedItems.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm">Plan Items</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {formData.feedItems.map(item => (
-                          <div key={item.id} className="flex justify-between items-center p-2 border rounded">
-                            <div>
-                              <span className="font-medium">{item.feedName}</span>
-                              <span className="text-sm text-muted-foreground ml-2">
-                                {item.amountPerDay}kg/day - ${item.costPerDay.toFixed(2)}/day
-                              </span>
-                              {item.notes && (
-                                <div className="text-sm text-muted-foreground">{item.notes}</div>
-                              )}
+                  <div className="space-y-2">
+                    <h5 className="font-medium">Current Feed Items:</h5>
+                    {formData.feedItems.map((item, index) => {
+                      const feed = feeds.find(f => f.id === item.feedId);
+                      const dailyCost = feed ? feed.costPerKg * item.amountPerDay : 0;
+                      
+                      return (
+                        <div
+                          key={`${item.feedId}-${index}`}
+                          className="flex justify-between items-center p-3 border rounded-lg"
+                        >
+                          <div className="flex-1">
+                            <span className="font-medium">{feed?.name || 'Unknown Feed'}</span>
+                            <div className="text-sm text-muted-foreground">
+                              {item.amountPerDay}kg/day • {item.frequency}x daily • ${dailyCost.toFixed(2)}/day
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveFeedItem(item.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Cost Summary */}
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="font-medium">Daily Cost:</span>
-                        <span className="ml-2">${formData.totalCostPerDay.toFixed(2)}</span>
-                      </div>
-                      <div>
-                        <span className="font-medium">Monthly Cost:</span>
-                        <span className="ml-2">${formData.totalCostPerMonth.toFixed(2)}</span>
-                      </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFeedFromList(index)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    
+                    <div className="text-right">
+                      <span className="font-medium">
+                        Total Cost: ${formData.totalCostPerDay.toFixed(2)}/day
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={resetForm}>
+                  <X className="w-4 h-4 mr-2" />
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {selectedPlan ? 'Update Plan' : 'Create Plan'}
+                <Button type="submit" disabled={formData.feedItems.length === 0}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {selectedPlan ? 'Update' : 'Create'} Plan
                 </Button>
               </div>
             </form>
@@ -364,75 +308,82 @@ export function FeedPlans() {
         </Dialog>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="list">
         <TabsList>
-          <TabsTrigger value="plans">Active Plans</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive Plans</TabsTrigger>
+          <TabsTrigger value="list">All Plans</TabsTrigger>
+          <TabsTrigger value="calendar">Schedule View</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="plans" className="space-y-4">
-          {activePlans.length === 0 ? (
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                No active feed plans found. Create your first feed plan to get started.
-              </AlertDescription>
-            </Alert>
+        <TabsContent value="list" className="space-y-4">
+          {feedPlans.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="font-semibold mb-2">No Feed Plans Yet</h3>
+                <p className="text-muted-foreground mb-4 text-center">
+                  Create your first feed plan to organize feeding schedules
+                </p>
+                <Button onClick={() => setIsFormOpen(true)}>
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                  Create Feed Plan
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-4">
-              {activePlans.map(plan => (
+              {feedPlans.map(plan => (
                 <Card key={plan.id}>
-                  <CardHeader className="pb-4">
+                  <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-lg">{plan.name}</CardTitle>
-                        <Badge variant="outline" className="mt-1">
-                          {plan.category}
-                        </Badge>
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Badge className={groupTypeColors[plan.groupType]}>
+                            {plan.groupType.charAt(0).toUpperCase() + plan.groupType.slice(1)}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            ${plan.totalCostPerDay.toFixed(2)}/day
+                          </span>
+                        </div>
                       </div>
                       <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(plan)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(plan)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(plan.id)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => handleDelete(plan.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {plan.description && (
-                      <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
-                    )}
-                    
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">Feed Items:</h4>
-                      {plan.feedItems.map(item => (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <span>{item.feedName}</span>
-                          <span>{item.amountPerDay}kg/day</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t">
-                      <div className="flex justify-between text-sm">
-                        <span>Daily Cost:</span>
-                        <span className="font-medium">${plan.totalCostPerDay.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Monthly Cost:</span>
-                        <span className="font-medium">${plan.totalCostPerMonth.toFixed(2)}</span>
-                      </div>
-                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Feed</TableHead>
+                          <TableHead>Amount/Day</TableHead>
+                          <TableHead>Frequency</TableHead>
+                          <TableHead>Cost/Day</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {plan.feedItems.map((item, index) => {
+                          const feed = feeds.find(f => f.id === item.feedId);
+                          const dailyCost = feed ? feed.costPerKg * item.amountPerDay : 0;
+                          
+                          return (
+                            <TableRow key={`${item.feedId}-${index}`}>
+                              <TableCell className="font-medium">
+                                {feed?.name || 'Unknown Feed'}
+                              </TableCell>
+                              <TableCell>{item.amountPerDay} kg</TableCell>
+                              <TableCell>{item.frequency}x daily</TableCell>
+                              <TableCell>${dailyCost.toFixed(2)}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
               ))}
@@ -440,52 +391,16 @@ export function FeedPlans() {
           )}
         </TabsContent>
 
-        <TabsContent value="inactive" className="space-y-4">
-          {inactivePlans.length === 0 ? (
-            <Alert>
-              <AlertDescription>
-                No inactive feed plans.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="grid gap-4">
-              {inactivePlans.map(plan => (
-                <Card key={plan.id} className="opacity-60">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{plan.name}</CardTitle>
-                        <Badge variant="secondary" className="mt-1">
-                          {plan.category} - Inactive
-                        </Badge>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(plan)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(plan.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-sm text-muted-foreground">
-                      {plan.feedItems.length} feed items • ${plan.totalCostPerDay.toFixed(2)}/day
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+        <TabsContent value="calendar">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
+              <h3 className="font-semibold mb-2">Schedule View Coming Soon</h3>
+              <p className="text-muted-foreground text-center">
+                Calendar view for feed schedules will be available in a future update
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

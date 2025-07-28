@@ -207,7 +207,7 @@ export default function KiddingForm({ breedingRecords, onSubmit, onCancel }: Kid
             <Checkbox
               id="vetAssistance"
               checked={vetAssistance}
-              onCheckedChange={setVetAssistance}
+              onCheckedChange={(checked) => setVetAssistance(checked === true)}
             />
             <Label htmlFor="vetAssistance">Veterinary assistance required</Label>
           </div>
