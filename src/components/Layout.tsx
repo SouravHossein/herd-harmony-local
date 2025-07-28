@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { 
@@ -12,7 +12,9 @@ import {
   Settings,
   Activity,
   Bot,
-  DollarSign
+  DollarSign,
+  TrendingUp,
+  Shield
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -22,16 +24,17 @@ interface LayoutProps {
 }
 
 export function Layout({ children, currentPage, onPageChange }: LayoutProps) {
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'goats', label: 'Goats', icon: Users },
-    { id: 'weight', label: 'Weight', icon: Weight },
-    { id: 'health', label: 'Health Records', icon: Heart },
-    { id: 'health-ai', label: 'Health AI', icon: Bot },
-    { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
-    { id: 'finance', label: 'Finance', icon: DollarSign },
-    { id: 'backup', label: 'Backup', icon: Download },
-    { id: 'settings', label: 'Settings', icon: Settings },
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const navigation = [
+    { name: 'Dashboard', page: 'dashboard', icon: Home },
+    { name: 'Goats', page: 'goats', icon: Heart },
+    { name: 'Weight Tracking', page: 'weight', icon: TrendingUp },
+    { name: 'Health AI', page: 'health-ai', icon: Activity },
+    { name: 'Pedigree', page: 'pedigree', icon: GitBranch },
+    { name: 'Finance', page: 'finance', icon: DollarSign },
+    { name: 'Backup', page: 'backup', icon: Shield },
+    { name: 'Settings', page: 'settings', icon: Settings },
   ];
 
   return (
@@ -48,23 +51,23 @@ export function Layout({ children, currentPage, onPageChange }: LayoutProps) {
               </h1>
             </div>
             <nav className="hidden md:flex space-x-1">
-              {navItems.map((item) => {
+              {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Button
-                    key={item.id}
-                    variant={currentPage === item.id ? 'default' : 'ghost'}
+                    key={item.page}
+                    variant={currentPage === item.page ? 'default' : 'ghost'}
                     size="sm"
-                    onClick={() => onPageChange(item.id)}
+                    onClick={() => onPageChange(item.page)}
                     className={cn(
                       'flex items-center space-x-2 transition-all duration-200',
-                      currentPage === item.id 
+                      currentPage === item.page 
                         ? 'bg-gradient-primary text-white shadow-glow' 
                         : 'hover:bg-secondary/50'
                     )}
                   >
                     <Icon className="h-4 w-4" />
-                    <span className="hidden lg:inline">{item.label}</span>
+                    <span className="hidden lg:inline">{item.name}</span>
                   </Button>
                 );
               })}
@@ -80,23 +83,23 @@ export function Layout({ children, currentPage, onPageChange }: LayoutProps) {
       {/* Mobile Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-border/40 p-2">
         <div className="flex justify-around">
-          {navItems.slice(0, 5).map((item) => {
+          {navigation.slice(0, 5).map((item) => {
             const Icon = item.icon;
             return (
               <Button
-                key={item.id}
-                variant={currentPage === item.id ? 'default' : 'ghost'}
+                key={item.page}
+                variant={currentPage === item.page ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => onPageChange(item.id)}
+                onClick={() => onPageChange(item.page)}
                 className={cn(
                   'flex flex-col items-center space-y-1 h-auto py-2',
-                  currentPage === item.id 
+                  currentPage === item.page 
                     ? 'bg-gradient-primary text-white' 
                     : 'text-muted-foreground'
                 )}
               >
                 <Icon className="h-4 w-4" />
-                <span className="text-xs">{item.label}</span>
+                <span className="text-xs">{item.name}</span>
               </Button>
             );
           })}

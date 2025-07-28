@@ -11,6 +11,7 @@ import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { loadSampleData } from '@/data/sampleData';
 import { FinanceDashboard } from '@/components/FinanceDashboard';
 import { BackupManager } from '@/components/BackupManager';
+import { HealthAI } from '@/components/HealthAI';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -21,7 +22,7 @@ const Index = () => {
   }, []);
 
   const handleShowHealth = (goatId: string) => {
-    setCurrentPage('health');
+    setCurrentPage('health-ai');
     // Here you could pass the goatId to filter health records
   };
 
@@ -38,10 +39,8 @@ const Index = () => {
         return <GoatManagement />;
       case 'weight':
         return <WeightTracking />;
-      case 'health':
-        return <HealthRecords />;
       case 'health-ai':
-        return <HealthDashboard />;
+        return <HealthAI />;
       case 'pedigree':
         return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
       case 'finance':

@@ -1,89 +1,70 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Download } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
-export interface PedigreeControlsProps {
+interface PedigreeControlsProps {
   generations: number;
-  onGenerationsChange: (generations: number) => void;
-  showMaternal: boolean;
-  onShowMaternalChange: (show: boolean) => void;
-  showPaternal: boolean;
-  onShowPaternalChange: (show: boolean) => void;
-  onExport: (format: 'png' | 'pdf') => Promise<void>;
+  onGenerationsChange: (value: number) => void;
+  showMalesOnly: boolean;
+  onShowMalesOnlyChange: (value: boolean) => void;
+  showFemalesOnly: boolean;
+  onShowFemalesOnlyChange: (value: boolean) => void;
 }
 
-export function PedigreeControls({
+export default function PedigreeControls({
   generations,
   onGenerationsChange,
-  showMaternal,
-  onShowMaternalChange,
-  showPaternal,
-  onShowPaternalChange,
-  onExport
+  showMalesOnly,
+  onShowMalesOnlyChange,
+  showFemalesOnly,
+  onShowFemalesOnlyChange,
 }: PedigreeControlsProps) {
   return (
-    <div className="flex flex-wrap items-center gap-4 p-4 bg-white rounded-lg border mb-4">
-      <div className="flex items-center space-x-2">
-        <Label htmlFor="generations">Generations:</Label>
-        <Select 
-          value={generations.toString()} 
-          onValueChange={(value) => onGenerationsChange(parseInt(value))}
-        >
-          <SelectTrigger className="w-20">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">1</SelectItem>
-            <SelectItem value="2">2</SelectItem>
-            <SelectItem value="3">3</SelectItem>
-            <SelectItem value="4">4</SelectItem>
-            <SelectItem value="5">5</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <Card className="shadow-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center space-x-2">
+          <Settings className="h-5 w-5" />
+          <span>Pedigree Controls</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="generations">Generations to Show: {generations}</Label>
+          <Slider
+            id="generations"
+            min={1}
+            max={5}
+            step={1}
+            value={[generations]}
+            onValueChange={(value) => onGenerationsChange(value[0])}
+            className="w-full"
+          />
+        </div>
 
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="maternal"
-          checked={showMaternal}
-          onCheckedChange={onShowMaternalChange}
-        />
-        <Label htmlFor="maternal">Maternal Line</Label>
-      </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="males-only"
+              checked={showMalesOnly}
+              onCheckedChange={onShowMalesOnlyChange}
+            />
+            <Label htmlFor="males-only">Males Only</Label>
+          </div>
 
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="paternal"
-          checked={showPaternal}
-          onCheckedChange={onShowPaternalChange}
-        />
-        <Label htmlFor="paternal">Paternal Line</Label>
-      </div>
-
-      <div className="flex items-center space-x-2 ml-auto">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onExport('png')}
-          className="flex items-center space-x-2"
-        >
-          <Download className="w-4 h-4" />
-          <span>PNG</span>
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onExport('pdf')}
-          className="flex items-center space-x-2"
-        >
-          <Download className="w-4 h-4" />
-          <span>PDF</span>
-        </Button>
-      </div>
-    </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="females-only"
+              checked={showFemalesOnly}
+              onCheckedChange={onShowFemalesOnlyChange}
+            />
+            <Label htmlFor="females-only">Females Only</Label>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
