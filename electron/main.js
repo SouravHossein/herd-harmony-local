@@ -95,6 +95,12 @@ ipcMain.handle('db:addBreedingRecord', (event, record) => db.add('breedingRecord
 ipcMain.handle('db:updateBreedingRecord', (event, id, updates) => db.update('breedingRecords', id, updates));
 ipcMain.handle('db:deleteBreedingRecord', (event, id) => db.delete('breedingRecords', id));
 
+// Finance operations
+ipcMain.handle('db:getFinanceRecords', () => db.getAll('financeRecords'));
+ipcMain.handle('db:addFinanceRecord', (event, record) => db.add('financeRecords', record));
+ipcMain.handle('db:updateFinanceRecord', (event, id, updates) => db.update('financeRecords', id, updates));
+ipcMain.handle('db:deleteFinanceRecord', (event, id) => db.delete('financeRecords', id));
+
 // Pedigree operations
 ipcMain.handle('pedigree:getTree', (event, goatId, generations) => 
   pedigreeService.getPedigreeTree(goatId, generations)

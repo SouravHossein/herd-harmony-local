@@ -1,4 +1,3 @@
-
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
@@ -18,7 +17,7 @@ class DatabaseService {
   }
 
   initDatabase() {
-    const tables = ['goats', 'weightRecords', 'healthRecords', 'breedingRecords'];
+    const tables = ['goats', 'weightRecords', 'healthRecords', 'breedingRecords', 'financeRecords'];
     tables.forEach(table => {
       const tablePath = path.join(this.dbPath, `${table}.json`);
       if (!fs.existsSync(tablePath)) {
@@ -81,6 +80,45 @@ class DatabaseService {
     const filteredData = data.filter(item => item.id !== id);
     this.writeTable(tableName, filteredData);
     return filteredData.length < data.length;
+  }
+
+  addFinanceRecord(record) {
+    const data = this.readTable('financeRecords');
+    const newRecord = { 
+      ...record, 
+      id: this.generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    data.push(newRecord);
+    this.writeTable('financeRecords', data);
+    return newRecord;
+  }
+
+  updateFinanceRecord(id, updates) {
+    const data = this.readTable('financeRecords');
+    const index = data.findIndex(record => record.id === id);
+    if (index !== -1) {
+      data[index] = { 
+        ...data[index], 
+        ...updates, 
+        updatedAt: new Date().toISOString() 
+      };
+      this.writeTable('financeRecords', data);
+      return data[index];
+    }
+    return null;
+  }
+
+  deleteFinanceRecord(id) {
+    const data = this.readTable('financeRecords');
+    const filteredData = data.filter(record => record.id !== id);
+    this.writeTable('financeRecords', filteredData);
+    return filteredData.length < data.length;
+  }
+
+  getFinanceRecords() {
+    return this.readTable('financeRecords');
   }
 
   exportData() {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { GoatProvider } from '@/context/GoatContext';
 import { Layout } from '@/components/Layout';
@@ -10,6 +9,7 @@ import { HealthRecords } from '@/components/HealthRecords';
 import { HealthDashboard } from '@/components/HealthDashboard';
 import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { loadSampleData } from '@/data/sampleData';
+import { FinanceDashboard } from '@/components/FinanceDashboard';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -43,6 +43,8 @@ const Index = () => {
         return <HealthDashboard />;
       case 'pedigree':
         return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
+      case 'finance':
+        return <FinanceDashboard />;
       case 'export':
       case 'import':
       case 'settings':

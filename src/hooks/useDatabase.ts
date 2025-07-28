@@ -26,11 +26,21 @@ declare global {
       addBreedingRecord: (record: any) => Promise<any>;
       updateBreedingRecord: (id: string, updates: any) => Promise<any>;
       deleteBreedingRecord: (id: string) => Promise<boolean>;
+
+      // Finance records
+      getFinanceRecords: () => Promise<any[]>;
+      addFinanceRecord: (record: any) => Promise<any>;
+      updateFinanceRecord: (id: string, updates: any) => Promise<any>;
+      deleteFinanceRecord: (id: string) => Promise<boolean>;
       
       // Data management
       exportData: () => Promise<any>;
       importData: (data: any) => Promise<boolean>;
       clearAll: () => Promise<boolean>;
+
+      // Pedigree operations
+      getPedigreeTree: (goatId: string, generations: number) => Promise<any>;
+      calculateInbreedingRisk: (sireId: string, damId: string) => Promise<any>;
       
       // File operations
       showSaveDialog: (options: any) => Promise<any>;
@@ -93,6 +103,9 @@ export function useDatabase<T>(tableName: string, initialValue: T) {
           case 'breedingRecords':
             result = await window.electronAPI!.getBreedingRecords();
             break;
+          case 'financeRecords':
+            result = await window.electronAPI!.getFinanceRecords();
+            break;
           default:
             result = initialValue;
         }
@@ -144,6 +157,7 @@ export function useGoatData() {
   const weightRecords = useDatabase('weightRecords', []);
   const healthRecords = useDatabase('healthRecords', []);
   const breedingRecords = useDatabase('breedingRecords', []);
+  const financeRecords = useDatabase('financeRecords', []);
 
   // Electron-specific operations
   const electronOperations = {
@@ -269,6 +283,21 @@ export function useGoatData() {
       return false;
     },
 
+    // Pedigree operations
+    getPedigreeTree: async (goatId: string, generations: number) => {
+      if (window.electronAPI?.isElectron) {
+        return await window.electronAPI.getPedigreeTree(goatId, generations);
+      }
+      return null;
+    },
+
+    calculateInbreedingRisk: async (sireId: string, damId: string) => {
+      if (window.electronAPI?.isElectron) {
+        return await window.electronAPI.calculateInbreedingRisk(sireId, damId);
+      }
+      return null;
+    },
+
     // Data management
     exportData: async () => {
       if (window.electronAPI?.isElectron) {
@@ -303,7 +332,37 @@ export function useGoatData() {
         return success;
       }
       return false;
-    }
+    },
+
+    // Finance record operations
+    addFinanceRecord: async (record: any) => {
+      if (window.electronAPI?.isElectron) {
+        const newRecord = await window.electronAPI.addFinanceRecord(record);
+        financeRecords.reload();
+        return newRecord;
+      }
+      return null;
+    },
+
+    updateFinanceRecord: async (id: string, updates: any) => {
+      if (window.electronAPI?.isElectron) {
+        const updatedRecord = await window.electronAPI.updateFinanceRecord(id, updates);
+        financeRecords.reload();
+        return updatedRecord;
+      }
+      return null;
+    },
+
+    deleteFinanceRecord: async (id: string) => {
+      if (window.electronAPI?.isElectron) {
+        const success = await window.electronAPI.deleteFinanceRecord(id);
+        if (success) {
+          financeRecords.reload();
+        }
+        return success;
+      }
+      return false;
+    },
   };
 
   return {
@@ -315,7 +374,9 @@ export function useGoatData() {
     setHealthRecords: healthRecords.setData,
     breedingRecords: breedingRecords.data,
     setBreedingRecords: breedingRecords.setData,
-    loading: goats.loading || weightRecords.loading || healthRecords.loading || breedingRecords.loading,
+    financeRecords: financeRecords.data,
+    setFinanceRecords: financeRecords.setData,
+    loading: goats.loading || weightRecords.loading || healthRecords.loading || breedingRecords.loading || financeRecords.loading,
     ...electronOperations
   };
 }

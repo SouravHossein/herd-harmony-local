@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,8 @@ import {
   Upload, 
   Settings,
   Activity,
-  Bot
+  Bot,
+  DollarSign
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -29,6 +29,7 @@ export function Layout({ children, currentPage, onPageChange }: LayoutProps) {
     { id: 'health', label: 'Health Records', icon: Heart },
     { id: 'health-ai', label: 'Health AI', icon: Bot },
     { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
+    { id: 'finance', label: 'Finance', icon: DollarSign },
     { id: 'export', label: 'Export', icon: Download },
     { id: 'import', label: 'Import', icon: Upload },
     { id: 'settings', label: 'Settings', icon: Settings },
