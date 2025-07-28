@@ -1,14 +1,28 @@
 const { app, BrowserWindow, ipcMain, Menu, dialog, shell, Notification } = require('electron');
 const path = require('path');
-const DatabaseService = require('./services/DatabaseService');
-const PedigreeService = require('./services/PedigreeService');
-const FileService = require('./services/FileService');
-const NotificationService = require('./services/NotificationService');
-const BackupService = require('./services/BackupService');
+const DatabaseService = require('./services/DatabaseService.cjs');
+const PedigreeService = require('./services/PedigreeService.cjs');
+const FileService = require('./services/FileService.cjs');
+const NotificationService = require('./services/NotificationService.cjs');
+const BackupService = require('./services/BackupService.cjs');
 
-const isDev = process.env.NODE_ENV === 'development';
-
+const isDev = true //!app.isPackaged;
 let mainWindow;
+
+// --- Service Instances ---
+let databaseService;
+let pedigreeService;
+let fileService;
+let notificationService;
+let backupService;
+
+function initializeServices(mainWindow) {
+  databaseService = new DatabaseService();
+  pedigreeService = new PedigreeService(databaseService);
+  fileService = new FileService(mainWindow);
+  notificationService = new NotificationService();
+  backupService = new BackupService(databaseService);
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -17,7 +31,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 
@@ -28,85 +42,49 @@ function createWindow() {
         {
           label: 'Open DevTools',
           accelerator: 'Ctrl+Shift+I',
-          click() {
-            mainWindow.webContents.openDevTools();
-          }
+          click: () => mainWindow.webContents.openDevTools(),
         },
-        {
-          label: 'Exit',
-          accelerator: 'Ctrl+W',
-          click() {
-            app.quit();
-          }
-        }
-      ]
-    }
+        { label: 'Exit', accelerator: 'Ctrl+W', click: () => app.quit() },
+      ],
+    },
   ]);
-
   Menu.setApplicationMenu(menu);
 
-  const startURL = isDev
-    ? 'http://localhost:5173'
-    : `file://${path.join(__dirname, '../dist/index.html')}`;
-
-  mainWindow.loadURL(startURL);
-
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url);
-    return { action: 'deny' };
-  });
+if (isDev) {
+  // ✅ Load Vite Dev Server during development
+  mainWindow.loadURL('http://localhost:5173');
+  mainWindow.webContents.openDevTools();
+} else {
+  // ✅ Load built app in production
+  mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
 }
 
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+// ✅ Ensure external links open in default browser in both modes
+mainWindow.webContents.setWindowOpenHandler((details) => {
+  shell.openExternal(details.url);
+  return { action: 'deny' };
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-// Services
-let databaseService;
-let pedigreeService;
-let fileService;
-let notificationService;
-let backupService;
-
-// Initialize services
-function initializeServices(mainWindow) {
-  databaseService = new DatabaseService();
-  pedigreeService = new PedigreeService(databaseService);
-  fileService = new FileService(mainWindow);
-  notificationService = new NotificationService();
-  backupService = new BackupService(databaseService);
 }
 
+// --- App Lifecycle ---
 app.whenReady().then(() => {
   createWindow();
   initializeServices(mainWindow);
 
-  // Schedule automatic backups on app start
+  // Auto backup scheduling
   backupService.getBackupSettings().then(settings => {
-    if (settings.autoBackup) {
-      backupService.scheduleAutoBackup(settings);
-    }
+    if (settings?.autoBackup) backupService.scheduleAutoBackup(settings);
   });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
 // Database IPC handlers
 ipcMain.handle('db:getGoats', () => databaseService.getAll('goats'));
 ipcMain.handle('db:addGoat', (event, goat) => databaseService.add('goats', goat));

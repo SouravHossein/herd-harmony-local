@@ -1,12 +1,11 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-// https://vitejs.dev/config/
 export default defineConfig({
+  base: "./", // ✅ ensures assets are loaded with relative paths
   server: {
-    port: 8080,
+    port: 5173,
   },
   plugins: [react()],
   resolve: {
