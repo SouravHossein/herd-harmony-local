@@ -111,6 +111,20 @@ ipcMain.handle('db:addFinanceRecord', (event, record) => databaseService.addFina
 ipcMain.handle('db:updateFinanceRecord', (event, id, updates) => databaseService.updateFinanceRecord(id, updates));
 ipcMain.handle('db:deleteFinanceRecord', (event, id) => databaseService.deleteFinanceRecord(id));
 
+// Feed management IPC handlers
+ipcMain.handle('db:getFeeds', () => databaseService.getFeeds());
+ipcMain.handle('db:addFeed', (event, feed) => databaseService.addFeed(feed));
+ipcMain.handle('db:updateFeed', (event, id, updates) => databaseService.updateFeed(id, updates));
+ipcMain.handle('db:deleteFeed', (event, id) => databaseService.deleteFeed(id));
+
+ipcMain.handle('db:getFeedPlans', () => databaseService.getFeedPlans());
+ipcMain.handle('db:addFeedPlan', (event, plan) => databaseService.addFeedPlan(plan));
+ipcMain.handle('db:updateFeedPlan', (event, id, updates) => databaseService.updateFeedPlan(id, updates));
+ipcMain.handle('db:deleteFeedPlan', (event, id) => databaseService.deleteFeedPlan(id));
+
+ipcMain.handle('db:getFeedLogs', () => databaseService.getFeedLogs());
+ipcMain.handle('db:addFeedLog', (event, log) => databaseService.addFeedLog(log));
+
 // Pedigree IPC handlers
 ipcMain.handle('pedigree:getTree', async (event, goatId, generations) => {
   return await pedigreeService.getPedigreeTree(goatId, generations);

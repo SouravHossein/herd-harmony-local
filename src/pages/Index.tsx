@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { GoatProvider } from '@/context/GoatContext';
 import { Layout } from '@/components/Layout';
@@ -12,6 +13,7 @@ import { loadSampleData } from '@/data/sampleData';
 import { FinanceDashboard } from '@/components/FinanceDashboard';
 import { BackupManager } from '@/components/BackupManager';
 import { HealthAI } from '@/components/HealthAI';
+import { FeedDashboard } from '@/components/feed/FeedDashboard';
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -41,6 +43,8 @@ const Index = () => {
         return <WeightTracking />;
       case 'health-ai':
         return <HealthAI />;
+      case 'feed':
+        return <FeedDashboard />;
       case 'pedigree':
         return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
       case 'finance':

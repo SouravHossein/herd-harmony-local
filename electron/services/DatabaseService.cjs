@@ -17,7 +17,7 @@ class DatabaseService {
   }
 
   initDatabase() {
-    const tables = ['goats', 'weightRecords', 'healthRecords', 'breedingRecords', 'financeRecords'];
+    const tables = ['goats', 'weightRecords', 'healthRecords', 'breedingRecords', 'financeRecords', 'feeds', 'feedPlans', 'feedLogs'];
     tables.forEach(table => {
       const tablePath = path.join(this.dbPath, `${table}.json`);
       if (!fs.existsSync(tablePath)) {
@@ -121,12 +121,113 @@ class DatabaseService {
     return this.readTable('financeRecords');
   }
 
+  // Feed management methods
+  addFeed(feed) {
+    const data = this.readTable('feeds');
+    const newFeed = { 
+      ...feed, 
+      id: this.generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    data.push(newFeed);
+    this.writeTable('feeds', data);
+    return newFeed;
+  }
+
+  updateFeed(id, updates) {
+    const data = this.readTable('feeds');
+    const index = data.findIndex(feed => feed.id === id);
+    if (index !== -1) {
+      data[index] = { 
+        ...data[index], 
+        ...updates, 
+        updatedAt: new Date().toISOString() 
+      };
+      this.writeTable('feeds', data);
+      return data[index];
+    }
+    return null;
+  }
+
+  deleteFeed(id) {
+    const data = this.readTable('feeds');
+    const filteredData = data.filter(feed => feed.id !== id);
+    this.writeTable('feeds', filteredData);
+    return filteredData.length < data.length;
+  }
+
+  getFeeds() {
+    return this.readTable('feeds');
+  }
+
+  // Feed plan methods
+  addFeedPlan(plan) {
+    const data = this.readTable('feedPlans');
+    const newPlan = { 
+      ...plan, 
+      id: this.generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    data.push(newPlan);
+    this.writeTable('feedPlans', data);
+    return newPlan;
+  }
+
+  updateFeedPlan(id, updates) {
+    const data = this.readTable('feedPlans');
+    const index = data.findIndex(plan => plan.id === id);
+    if (index !== -1) {
+      data[index] = { 
+        ...data[index], 
+        ...updates, 
+        updatedAt: new Date().toISOString() 
+      };
+      this.writeTable('feedPlans', data);
+      return data[index];
+    }
+    return null;
+  }
+
+  deleteFeedPlan(id) {
+    const data = this.readTable('feedPlans');
+    const filteredData = data.filter(plan => plan.id !== id);
+    this.writeTable('feedPlans', filteredData);
+    return filteredData.length < data.length;
+  }
+
+  getFeedPlans() {
+    return this.readTable('feedPlans');
+  }
+
+  // Feed log methods
+  addFeedLog(log) {
+    const data = this.readTable('feedLogs');
+    const newLog = { 
+      ...log, 
+      id: this.generateId(),
+      createdAt: new Date().toISOString()
+    };
+    data.push(newLog);
+    this.writeTable('feedLogs', data);
+    return newLog;
+  }
+
+  getFeedLogs() {
+    return this.readTable('feedLogs');
+  }
+
   exportData() {
     const data = {
       goats: this.readTable('goats'),
       weightRecords: this.readTable('weightRecords'),
       healthRecords: this.readTable('healthRecords'),
       breedingRecords: this.readTable('breedingRecords'),
+      financeRecords: this.readTable('financeRecords'),
+      feeds: this.readTable('feeds'),
+      feedPlans: this.readTable('feedPlans'),
+      feedLogs: this.readTable('feedLogs'),
       exportDate: new Date().toISOString(),
       version: '1.0'
     };
@@ -139,6 +240,10 @@ class DatabaseService {
       this.writeTable('weightRecords', data.weightRecords || []);
       this.writeTable('healthRecords', data.healthRecords || []);
       this.writeTable('breedingRecords', data.breedingRecords || []);
+      this.writeTable('financeRecords', data.financeRecords || []);
+      this.writeTable('feeds', data.feeds || []);
+      this.writeTable('feedPlans', data.feedPlans || []);
+      this.writeTable('feedLogs', data.feedLogs || []);
       return true;
     } catch (error) {
       console.error('Error importing data:', error);
@@ -152,6 +257,10 @@ class DatabaseService {
       this.writeTable('weightRecords', []);
       this.writeTable('healthRecords', []);
       this.writeTable('breedingRecords', []);
+      this.writeTable('financeRecords', []);
+      this.writeTable('feeds', []);
+      this.writeTable('feedPlans', []);
+      this.writeTable('feedLogs', []);
       return true;
     } catch (error) {
       console.error('Error clearing data:', error);

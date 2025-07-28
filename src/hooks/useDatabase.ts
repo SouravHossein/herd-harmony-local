@@ -32,6 +32,22 @@ declare global {
       addFinanceRecord: (record: any) => Promise<any>;
       updateFinanceRecord: (id: string, updates: any) => Promise<any>;
       deleteFinanceRecord: (id: string) => Promise<boolean>;
+
+      // Feed operations
+      getFeeds: () => Promise<any[]>;
+      addFeed: (feed: any) => Promise<any>;
+      updateFeed: (id: string, updates: any) => Promise<any>;
+      deleteFeed: (id: string) => Promise<boolean>;
+
+      // Feed plan operations
+      getFeedPlans: () => Promise<any[]>;
+      addFeedPlan: (plan: any) => Promise<any>;
+      updateFeedPlan: (id: string, updates: any) => Promise<any>;
+      deleteFeedPlan: (id: string) => Promise<boolean>;
+
+      // Feed log operations
+      getFeedLogs: () => Promise<any[]>;
+      addFeedLog: (log: any) => Promise<any>;
       
       // Data management
       exportData: () => Promise<any>;
@@ -115,6 +131,15 @@ export function useDatabase<T>(tableName: string, initialValue: T) {
           case 'financeRecords':
             result = await window.electronAPI!.getFinanceRecords();
             break;
+          case 'feeds':
+            result = await window.electronAPI!.getFeeds();
+            break;
+          case 'feedPlans':
+            result = await window.electronAPI!.getFeedPlans();
+            break;
+          case 'feedLogs':
+            result = await window.electronAPI!.getFeedLogs();
+            break;
           default:
             result = initialValue;
         }
@@ -167,9 +192,84 @@ export function useGoatData() {
   const healthRecords = useDatabase('healthRecords', []);
   const breedingRecords = useDatabase('breedingRecords', []);
   const financeRecords = useDatabase('financeRecords', []);
+  const feeds = useDatabase('feeds', []);
+  const feedPlans = useDatabase('feedPlans', []);
+  const feedLogs = useDatabase('feedLogs', []);
 
   // Electron-specific operations
   const electronOperations = {
+    // ... keep existing code (goat, weight, health, breeding, finance operations)
+
+    // Feed operations
+    addFeed: async (feed: any) => {
+      if (window.electronAPI?.isElectron) {
+        const newFeed = await window.electronAPI.addFeed(feed);
+        feeds.reload();
+        return newFeed;
+      }
+      return null;
+    },
+
+    updateFeed: async (id: string, updates: any) => {
+      if (window.electronAPI?.isElectron) {
+        const updatedFeed = await window.electronAPI.updateFeed(id, updates);
+        feeds.reload();
+        return updatedFeed;
+      }
+      return null;
+    },
+
+    deleteFeed: async (id: string) => {
+      if (window.electronAPI?.isElectron) {
+        const success = await window.electronAPI.deleteFeed(id);
+        if (success) {
+          feeds.reload();
+        }
+        return success;
+      }
+      return false;
+    },
+
+    // Feed plan operations
+    addFeedPlan: async (plan: any) => {
+      if (window.electronAPI?.isElectron) {
+        const newPlan = await window.electronAPI.addFeedPlan(plan);
+        feedPlans.reload();
+        return newPlan;
+      }
+      return null;
+    },
+
+    updateFeedPlan: async (id: string, updates: any) => {
+      if (window.electronAPI?.isElectron) {
+        const updatedPlan = await window.electronAPI.updateFeedPlan(id, updates);
+        feedPlans.reload();
+        return updatedPlan;
+      }
+      return null;
+    },
+
+    deleteFeedPlan: async (id: string) => {
+      if (window.electronAPI?.isElectron) {
+        const success = await window.electronAPI.deleteFeedPlan(id);
+        if (success) {
+          feedPlans.reload();
+        }
+        return success;
+      }
+      return false;
+    },
+
+    // Feed log operations
+    addFeedLog: async (log: any) => {
+      if (window.electronAPI?.isElectron) {
+        const newLog = await window.electronAPI.addFeedLog(log);
+        feedLogs.reload();
+        return newLog;
+      }
+      return null;
+    },
+
     // Goat operations
     addGoat: async (goat: any) => {
       if (window.electronAPI?.isElectron) {
@@ -323,6 +423,10 @@ export function useGoatData() {
           weightRecords.reload();
           healthRecords.reload();
           breedingRecords.reload();
+          financeRecords.reload();
+          feeds.reload();
+          feedPlans.reload();
+          feedLogs.reload();
         }
         return success;
       }
@@ -337,6 +441,10 @@ export function useGoatData() {
           weightRecords.reload();
           healthRecords.reload();
           breedingRecords.reload();
+          financeRecords.reload();
+          feeds.reload();
+          feedPlans.reload();
+          feedLogs.reload();
         }
         return success;
       }
@@ -385,7 +493,13 @@ export function useGoatData() {
     setBreedingRecords: breedingRecords.setData,
     financeRecords: financeRecords.data,
     setFinanceRecords: financeRecords.setData,
-    loading: goats.loading || weightRecords.loading || healthRecords.loading || breedingRecords.loading || financeRecords.loading,
+    feeds: feeds.data,
+    setFeeds: feeds.setData,
+    feedPlans: feedPlans.data,
+    setFeedPlans: feedPlans.setData,
+    feedLogs: feedLogs.data,
+    setFeedLogs: feedLogs.setData,
+    loading: goats.loading || weightRecords.loading || healthRecords.loading || breedingRecords.loading || financeRecords.loading || feeds.loading || feedPlans.loading || feedLogs.loading,
     ...electronOperations
   };
 }

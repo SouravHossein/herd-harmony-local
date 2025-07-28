@@ -1,3 +1,4 @@
+
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -30,6 +31,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   addFinanceRecord: (record) => ipcRenderer.invoke('db:addFinanceRecord', record),
   updateFinanceRecord: (id, updates) => ipcRenderer.invoke('db:updateFinanceRecord', id, updates),
   deleteFinanceRecord: (id) => ipcRenderer.invoke('db:deleteFinanceRecord', id),
+
+  // Database operations for feeds
+  getFeeds: () => ipcRenderer.invoke('db:getFeeds'),
+  addFeed: (feed) => ipcRenderer.invoke('db:addFeed', feed),
+  updateFeed: (id, updates) => ipcRenderer.invoke('db:updateFeed', id, updates),
+  deleteFeed: (id) => ipcRenderer.invoke('db:deleteFeed', id),
+
+  // Database operations for feed plans
+  getFeedPlans: () => ipcRenderer.invoke('db:getFeedPlans'),
+  addFeedPlan: (plan) => ipcRenderer.invoke('db:addFeedPlan', plan),
+  updateFeedPlan: (id, updates) => ipcRenderer.invoke('db:updateFeedPlan', id, updates),
+  deleteFeedPlan: (id) => ipcRenderer.invoke('db:deleteFeedPlan', id),
+
+  // Database operations for feed logs
+  getFeedLogs: () => ipcRenderer.invoke('db:getFeedLogs'),
+  addFeedLog: (log) => ipcRenderer.invoke('db:addFeedLog', log),
 
   // Pedigree operations
   getPedigreeTree: (goatId, generations) => ipcRenderer.invoke('pedigree:getTree', goatId, generations),
