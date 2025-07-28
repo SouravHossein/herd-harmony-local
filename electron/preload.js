@@ -1,3 +1,4 @@
+
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -24,6 +25,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   addBreedingRecord: (record) => ipcRenderer.invoke('db:addBreedingRecord', record),
   updateBreedingRecord: (id, updates) => ipcRenderer.invoke('db:updateBreedingRecord', id, updates),
   deleteBreedingRecord: (id) => ipcRenderer.invoke('db:deleteBreedingRecord', id),
+
+  // Pedigree operations
+  getPedigreeTree: (goatId, generations) => ipcRenderer.invoke('pedigree:getTree', goatId, generations),
+  calculateInbreedingRisk: (sireId, damId) => ipcRenderer.invoke('pedigree:calculateInbreedingRisk', sireId, damId),
 
   // Data management
   exportData: () => ipcRenderer.invoke('db:exportData'),

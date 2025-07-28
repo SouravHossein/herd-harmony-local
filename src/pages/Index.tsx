@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { GoatProvider } from '@/context/GoatContext';
 import { Layout } from '@/components/Layout';
@@ -6,6 +7,7 @@ import { GoatManagement } from '@/components/GoatManagement';
 import { DataManagement } from '@/components/DataManagement';
 import { WeightTracking } from '@/components/WeightTracking';
 import { HealthRecords } from '@/components/HealthRecords';
+import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { loadSampleData } from '@/data/sampleData';
 
 const Index = () => {
@@ -15,6 +17,16 @@ const Index = () => {
     // Load sample data on first visit
     loadSampleData();
   }, []);
+
+  const handleShowHealth = (goatId: string) => {
+    setCurrentPage('health');
+    // Here you could pass the goatId to filter health records
+  };
+
+  const handleShowWeight = (goatId: string) => {
+    setCurrentPage('weight');
+    // Here you could pass the goatId to filter weight records
+  };
 
   const renderPage = () => {
     switch (currentPage) {
@@ -26,6 +38,8 @@ const Index = () => {
         return <WeightTracking />;
       case 'health':
         return <HealthRecords />;
+      case 'pedigree':
+        return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
       case 'export':
       case 'import':
       case 'settings':

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -11,7 +12,8 @@ import {
   Download,
   Upload,
   Menu,
-  X
+  X,
+  GitBranch
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +29,7 @@ const navigationItems = [
   { id: 'weight', label: 'Weight Tracking', icon: Weight },
   { id: 'health', label: 'Health Records', icon: Heart },
   { id: 'breeding', label: 'Breeding', icon: Baby },
+  { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
   { id: 'reports', label: 'Reports', icon: FileText },
 ];
 
