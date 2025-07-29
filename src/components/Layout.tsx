@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Baby,
   Database,
-  Shield
+  Shield,
+  CloudSun
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -32,6 +33,7 @@ const navigationItems = [
   { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
   { id: 'finance', label: 'Finance', icon: DollarSign },
   { id: 'feed', label: 'Feed', icon: Wheat },
+  { id: 'weather', label: 'Weather', icon: CloudSun },
   { id: 'health-ai', label: 'Health AI', icon: Activity },
   { id: 'growth-optimizer', label: 'Growth', icon: TrendingUp },
   { id: 'data', label: 'Data', icon: Database },

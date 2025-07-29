@@ -13,6 +13,7 @@ import FinanceDashboard from '@/components/finance/FinanceDashboard';
 import { HealthAI } from '@/components/HealthAI';
 import GrowthOptimizer from '@/components/GrowthOptimizer';
 import BreedingPlanner from '@/components/breeding/BreedingPlanner';
+import { WeatherDashboard } from '@/components/weather/WeatherDashboard';
 import { GoatProvider } from '@/context/GoatContext';
 
 export default function Index() {
@@ -44,6 +45,8 @@ export default function Index() {
         return <FinanceDashboard />;
       case 'feed':
         return <FeedDashboard />;
+      case 'weather':
+        return <WeatherDashboard />;
       case 'health-ai':
         return <HealthAI />;
       case 'growth-optimizer':
