@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useGoatData } from '@/hooks/useDatabase';
 import { useGoatDataLocal } from '@/hooks/useLocalStorageOnly';
@@ -37,6 +38,14 @@ interface GoatContextType {
   addFinanceRecord: (record: any) => Promise<any>;
   updateFinanceRecord: (id: string, updates: any) => Promise<any>;
   deleteFinanceRecord: (id: string) => Promise<boolean>;
+  // Additional methods expected by components
+  getGoatWeightHistory: (goatId: string) => WeightRecord[];
+  getGoatHealthHistory: (goatId: string) => HealthRecord[];
+  getUpcomingHealthReminders: () => HealthRecord[];
+  exportData: () => Promise<any>;
+  importData: (data: any) => Promise<boolean>;
+  clearAllData: () => Promise<boolean>;
+  getFarmStats: () => any;
 }
 
 const GoatContext = createContext<GoatContextType | undefined>(undefined);
@@ -48,25 +57,99 @@ export function GoatProvider({ children }: { children: ReactNode }) {
   const electronData = useGoatData();
   const localData = useGoatDataLocal();
   
+  // Utility functions that work with both data sources
+  const getGoatWeightHistory = (goatId: string): WeightRecord[] => {
+    const records = isElectronAvailable ? electronData.weightRecords.data || [] : localData.weightRecords;
+    return records.filter((record: WeightRecord) => record.goatId === goatId);
+  };
+
+  const getGoatHealthHistory = (goatId: string): HealthRecord[] => {
+    const records = isElectronAvailable ? electronData.healthRecords.data || [] : localData.healthRecords;
+    return records.filter((record: HealthRecord) => record.goatId === goatId);
+  };
+
+  const getUpcomingHealthReminders = (): HealthRecord[] => {
+    const records = isElectronAvailable ? electronData.healthRecords.data || [] : localData.healthRecords;
+    const now = new Date();
+    return records.filter((record: HealthRecord) => 
+      record.status === 'scheduled' && 
+      record.nextDueDate && 
+      new Date(record.nextDueDate) >= now
+    );
+  };
+
+  const exportData = async () => {
+    const data = {
+      goats: isElectronAvailable ? electronData.goats.data : localData.goats,
+      weightRecords: isElectronAvailable ? electronData.weightRecords.data : localData.weightRecords,
+      healthRecords: isElectronAvailable ? electronData.healthRecords.data : localData.healthRecords,
+      breedingRecords: isElectronAvailable ? electronData.breedingRecords.data : localData.breedingRecords,
+      financeRecords: isElectronAvailable ? electronData.financeRecords.data : localData.financeRecords,
+    };
+    return data;
+  };
+
+  const importData = async (data: any) => {
+    if (isElectronAvailable) {
+      // Handle Electron import
+      return false;
+    } else {
+      localData.setGoats(data.goats || []);
+      localData.setWeightRecords(data.weightRecords || []);
+      localData.setHealthRecords(data.healthRecords || []);
+      localData.setBreedingRecords(data.breedingRecords || []);
+      localData.setFinanceRecords(data.financeRecords || []);
+      return true;
+    }
+  };
+
+  const clearAllData = async () => {
+    if (isElectronAvailable) {
+      return false;
+    } else {
+      localData.setGoats([]);
+      localData.setWeightRecords([]);
+      localData.setHealthRecords([]);
+      localData.setBreedingRecords([]);
+      localData.setFinanceRecords([]);
+      return true;
+    }
+  };
+
+  const getFarmStats = () => {
+    const goats = isElectronAvailable ? electronData.goats.data || [] : localData.goats;
+    const weightRecords = isElectronAvailable ? electronData.weightRecords.data || [] : localData.weightRecords;
+    const healthRecords = isElectronAvailable ? electronData.healthRecords.data || [] : localData.healthRecords;
+
+    return {
+      totalGoats: goats.length,
+      activeGoats: goats.filter((g: Goat) => g.status === 'active').length,
+      averageWeight: weightRecords.length > 0 
+        ? weightRecords.reduce((sum: number, r: WeightRecord) => sum + r.weight, 0) / weightRecords.length 
+        : 0,
+      upcomingReminders: getUpcomingHealthReminders().length
+    };
+  };
+  
   // Choose data source based on availability
   const contextValue = isElectronAvailable ? {
-    goats: electronData.goats.data,
-    setGoats: electronData.goats.setData,
-    weightRecords: electronData.weightRecords.data,
-    setWeightRecords: electronData.weightRecords.setData,
-    healthRecords: electronData.healthRecords.data,
-    setHealthRecords: electronData.healthRecords.setData,
-    breedingRecords: electronData.breedingRecords.data,
-    setBreedingRecords: electronData.breedingRecords.setData,
-    financeRecords: electronData.financeRecords.data,
-    setFinanceRecords: electronData.financeRecords.setData,
-    feeds: electronData.feeds.data,
-    setFeeds: electronData.feeds.setData,
-    feedPlans: electronData.feedPlans.data,
-    setFeedPlans: electronData.feedPlans.setData,
-    feedLogs: electronData.feedLogs.data,
-    setFeedLogs: electronData.feedLogs.setData,
-    loading: electronData.goats.loading || electronData.weightRecords.loading || electronData.healthRecords.loading || electronData.breedingRecords.loading,
+    goats: electronData.goats.data || [],
+    setGoats: electronData.goats.setData || (() => {}),
+    weightRecords: electronData.weightRecords.data || [],
+    setWeightRecords: electronData.weightRecords.setData || (() => {}),
+    healthRecords: electronData.healthRecords.data || [],
+    setHealthRecords: electronData.healthRecords.setData || (() => {}),
+    breedingRecords: electronData.breedingRecords.data || [],
+    setBreedingRecords: electronData.breedingRecords.setData || (() => {}),
+    financeRecords: electronData.financeRecords.data || [],
+    setFinanceRecords: electronData.financeRecords.setData || (() => {}),
+    feeds: electronData.feeds.data || [],
+    setFeeds: electronData.feeds.setData || (() => {}),
+    feedPlans: electronData.feedPlans.data || [],
+    setFeedPlans: electronData.feedPlans.setData || (() => {}),
+    feedLogs: electronData.feedLogs.data || [],
+    setFeedLogs: electronData.feedLogs.setData || (() => {}),
+    loading: electronData.goats.loading || electronData.weightRecords.loading || electronData.healthRecords.loading || electronData.breedingRecords.loading || false,
     error: electronData.goats.error || electronData.weightRecords.error || electronData.healthRecords.error || electronData.breedingRecords.error,
     addGoat: electronData.addGoat,
     updateGoat: electronData.updateGoat,
@@ -83,33 +166,95 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     addFinanceRecord: electronData.addFinanceRecord,
     updateFinanceRecord: electronData.updateFinanceRecord,
     deleteFinanceRecord: electronData.deleteFinanceRecord,
+    getGoatWeightHistory,
+    getGoatHealthHistory,
+    getUpcomingHealthReminders,
+    exportData,
+    importData,
+    clearAllData,
+    getFarmStats
   } : {
     goats: localData.goats,
+    setGoats: localData.setGoats,
     weightRecords: localData.weightRecords,
+    setWeightRecords: localData.setWeightRecords,
     healthRecords: localData.healthRecords,
+    setHealthRecords: localData.setHealthRecords,
     breedingRecords: localData.breedingRecords,
+    setBreedingRecords: localData.setBreedingRecords,
     financeRecords: localData.financeRecords,
+    setFinanceRecords: localData.setFinanceRecords,
     feeds: localData.feeds,
+    setFeeds: localData.setFeeds,
     feedPlans: localData.feedPlans,
+    setFeedPlans: localData.setFeedPlans,
     feedLogs: localData.feedLogs,
+    setFeedLogs: localData.setFeedLogs,
     loading: localData.loading,
     error: localData.error,
     addGoat: localData.addGoat,
     updateGoat: localData.updateGoat,
     deleteGoat: localData.deleteGoat,
     // Add stubs for other operations
-    addWeightRecord: (record: any) => Promise.resolve(null),
-    updateWeightRecord: (id: string, updates: any) => Promise.resolve(null),
-    deleteWeightRecord: (id: string) => Promise.resolve(false),
-    addHealthRecord: (record: any) => Promise.resolve(null),
-    updateHealthRecord: (id: string, updates: any) => Promise.resolve(null),
-    deleteHealthRecord: (id: string) => Promise.resolve(false),
-    addBreedingRecord: (record: any) => Promise.resolve(null),
-    updateBreedingRecord: (id: string, updates: any) => Promise.resolve(null),
-    deleteBreedingRecord: (id: string) => Promise.resolve(false),
-    addFinanceRecord: (record: any) => Promise.resolve(null),
-    updateFinanceRecord: (id: string, updates: any) => Promise.resolve(null),
-    deleteFinanceRecord: (id: string) => Promise.resolve(false),
+    addWeightRecord: async (record: any) => { 
+      const newRecord = { ...record, id: Date.now().toString(), createdAt: new Date() };
+      localData.setWeightRecords(prev => [...prev, newRecord]);
+      return newRecord;
+    },
+    updateWeightRecord: async (id: string, updates: any) => {
+      localData.setWeightRecords(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+      return null;
+    },
+    deleteWeightRecord: async (id: string) => {
+      localData.setWeightRecords(prev => prev.filter(r => r.id !== id));
+      return true;
+    },
+    addHealthRecord: async (record: any) => {
+      const newRecord = { ...record, id: Date.now().toString(), createdAt: new Date() };
+      localData.setHealthRecords(prev => [...prev, newRecord]);
+      return newRecord;
+    },
+    updateHealthRecord: async (id: string, updates: any) => {
+      localData.setHealthRecords(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+      return null;
+    },
+    deleteHealthRecord: async (id: string) => {
+      localData.setHealthRecords(prev => prev.filter(r => r.id !== id));
+      return true;
+    },
+    addBreedingRecord: async (record: any) => {
+      const newRecord = { ...record, id: Date.now().toString(), createdAt: new Date() };
+      localData.setBreedingRecords(prev => [...prev, newRecord]);
+      return newRecord;
+    },
+    updateBreedingRecord: async (id: string, updates: any) => {
+      localData.setBreedingRecords(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+      return null;
+    },
+    deleteBreedingRecord: async (id: string) => {
+      localData.setBreedingRecords(prev => prev.filter(r => r.id !== id));
+      return true;
+    },
+    addFinanceRecord: async (record: any) => {
+      const newRecord = { ...record, id: Date.now().toString(), createdAt: new Date() };
+      localData.setFinanceRecords(prev => [...prev, newRecord]);
+      return newRecord;
+    },
+    updateFinanceRecord: async (id: string, updates: any) => {
+      localData.setFinanceRecords(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+      return null;
+    },
+    deleteFinanceRecord: async (id: string) => {
+      localData.setFinanceRecords(prev => prev.filter(r => r.id !== id));
+      return true;
+    },
+    getGoatWeightHistory,
+    getGoatHealthHistory,
+    getUpcomingHealthReminders,
+    exportData,
+    importData,
+    clearAllData,
+    getFarmStats
   };
 
   return (
