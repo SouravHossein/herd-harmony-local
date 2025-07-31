@@ -1,11 +1,13 @@
 
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Heart, TrendingUp } from 'lucide-react';
+import { Eye, Heart, TrendingUp, Copy } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { useImageStorage } from '@/hooks/useImageStorage';
+import { toast } from '@/components/ui/use-toast';
 
 interface GoatNodeData extends Record<string, unknown> {
   goat: {
@@ -17,22 +19,41 @@ interface GoatNodeData extends Record<string, unknown> {
     dateOfBirth: Date;
     color: string;
     status: 'active' | 'sold' | 'deceased';
-  };
+    imageId?: string;
+  } | null;
+  generation: number;
+  isUnknown?: boolean;
+  onGoatSelect?: (goat: any) => void;
   onShowHealth?: (goatId: string) => void;
   onShowWeight?: (goatId: string) => void;
-  level: number;
-  position: 'sire' | 'dam' | 'offspring';
-}
-
-interface GoatNode {
-  id: string;
-  type: string;
-  position: { x: number; y: number };
-  data: GoatNodeData;
 }
 
 const PedigreeNode = memo(({ data }: { data: GoatNodeData }) => {
-  const { goat, onShowHealth, onShowWeight, level, position } = data;
+  const { goat, generation, isUnknown, onGoatSelect, onShowHealth, onShowWeight } = data;
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const { getImage } = useImageStorage();
+
+  useEffect(() => {
+    if (goat?.imageId) {
+      getImage(goat.imageId).then(url => {
+        if (url) setImageUrl(url);
+      });
+    }
+  }, [goat?.imageId, getImage]);
+
+  if (isUnknown || !goat) {
+    return (
+      <Card className="w-64 shadow-lg bg-gray-50 border-gray-200">
+        <CardContent className="p-4">
+          <div className="text-center text-muted-foreground">
+            <p className="font-medium">Unknown</p>
+            <p className="text-xs">Generation {generation}</p>
+          </div>
+          <Handle type="target" position={Position.Right} className="w-3 h-3 bg-gray-400" />
+        </CardContent>
+      </Card>
+    );
+  }
   
   const getNodeColor = () => {
     if (goat.gender === 'male') return 'bg-blue-50 border-blue-200';
@@ -40,10 +61,18 @@ const PedigreeNode = memo(({ data }: { data: GoatNodeData }) => {
   };
 
   const getGenerationLabel = () => {
-    if (level === 0) return 'Individual';
-    if (level === 1) return 'Parents';
-    if (level === 2) return 'Grandparents';
-    return `Generation ${level}`;
+    if (generation === 0) return 'Individual';
+    if (generation === 1) return 'Parents';
+    if (generation === 2) return 'Grandparents';
+    return `Generation ${generation}`;
+  };
+
+  const copyId = () => {
+    navigator.clipboard.writeText(goat.id);
+    toast({
+      title: "ID copied",
+      description: `Copied ${goat.name}'s ID to clipboard`,
+    });
   };
 
   const age = Math.floor((new Date().getTime() - new Date(goat.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
@@ -52,11 +81,32 @@ const PedigreeNode = memo(({ data }: { data: GoatNodeData }) => {
     <Card className={`w-64 shadow-lg ${getNodeColor()}`}>
       <CardContent className="p-4">
         <div className="space-y-2">
+          {imageUrl && (
+            <div className="flex justify-center">
+              <img
+                src={imageUrl}
+                alt={goat.name}
+                className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
+              />
+            </div>
+          )}
+          
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-lg">{goat.name}</h3>
-            <Badge variant={goat.gender === 'male' ? 'default' : 'secondary'}>
-              {goat.gender === 'male' ? '♂' : '♀'}
-            </Badge>
+            <div className="flex items-center space-x-1">
+              <Badge variant={goat.gender === 'male' ? 'default' : 'secondary'}>
+                {goat.gender === 'male' ? '♂' : '♀'}
+              </Badge>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={copyId}
+                className="h-6 w-6 p-0"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
           
           <div className="text-sm text-muted-foreground space-y-1">
@@ -100,9 +150,8 @@ const PedigreeNode = memo(({ data }: { data: GoatNodeData }) => {
           </div>
         </div>
 
-        {/* Connection handles */}
-        <Handle type="target" position={Position.Top} className="w-3 h-3 bg-primary" />
-        <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-primary" />
+        <Handle type="target" position={Position.Right} className="w-3 h-3 bg-primary" />
+        <Handle type="source" position={Position.Left} className="w-3 h-3 bg-primary" />
       </CardContent>
     </Card>
   );

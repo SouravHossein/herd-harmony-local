@@ -11,6 +11,7 @@ export interface Goat {
   fatherId?: string;
   motherId?: string;
   photoPath?: string;
+  imageId?: string; // New field for image storage
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
