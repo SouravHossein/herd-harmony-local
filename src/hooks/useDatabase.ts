@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 
 declare global {
@@ -78,31 +79,15 @@ declare global {
   }
 }
 
-// Fallback to localStorage if not in Electron
-function getLocalStorageItem<T>(key: string, defaultValue: T): T {
-  try {
-    const item = window.localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
-  } catch (error) {
-    console.error(`Error reading localStorage key "${key}":`, error);
-    return defaultValue;
-  }
-}
-
-function setLocalStorageItem<T>(key: string, value: T): void {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error(`Error setting localStorage key "${key}":`, error);
-  }
-}
-
 export function useDatabase<T>(tableName: string, initialValue: T) {
   const [data, setData] = useState<T>(initialValue);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isElectron = window.electronAPI?.isElectron;
+  // Ensure Electron environment
+  if (!window.electronAPI?.isElectron) {
+    throw new Error('This application requires Electron environment. Please run the desktop application.');
+  }
 
   useEffect(() => {
     loadData();
@@ -113,45 +98,39 @@ export function useDatabase<T>(tableName: string, initialValue: T) {
     setError(null);
     
     try {
-      if (isElectron) {
-        let result;
-        switch (tableName) {
-          case 'goats':
-            result = await window.electronAPI!.getGoats();
-            break;
-          case 'weightRecords':
-            result = await window.electronAPI!.getWeightRecords();
-            break;
-          case 'healthRecords':
-            result = await window.electronAPI!.getHealthRecords();
-            break;
-          case 'breedingRecords':
-            result = await window.electronAPI!.getBreedingRecords();
-            break;
-          case 'financeRecords':
-            result = await window.electronAPI!.getFinanceRecords();
-            break;
-          case 'feeds':
-            result = await window.electronAPI!.getFeeds();
-            break;
-          case 'feedPlans':
-            result = await window.electronAPI!.getFeedPlans();
-            break;
-          case 'feedLogs':
-            result = await window.electronAPI!.getFeedLogs();
-            break;
-          default:
-            result = initialValue;
-        }
-        setData(result as T);
-      } else {
-        // Fallback to localStorage
-        const result = getLocalStorageItem(tableName, initialValue);
-        setData(result);
+      let result;
+      switch (tableName) {
+        case 'goats':
+          result = await window.electronAPI!.getGoats();
+          break;
+        case 'weightRecords':
+          result = await window.electronAPI!.getWeightRecords();
+          break;
+        case 'healthRecords':
+          result = await window.electronAPI!.getHealthRecords();
+          break;
+        case 'breedingRecords':
+          result = await window.electronAPI!.getBreedingRecords();
+          break;
+        case 'financeRecords':
+          result = await window.electronAPI!.getFinanceRecords();
+          break;
+        case 'feeds':
+          result = await window.electronAPI!.getFeeds();
+          break;
+        case 'feedPlans':
+          result = await window.electronAPI!.getFeedPlans();
+          break;
+        case 'feedLogs':
+          result = await window.electronAPI!.getFeedLogs();
+          break;
+        default:
+          result = initialValue;
       }
+      setData(result as T);
     } catch (error) {
       console.error(`Error loading ${tableName}:`, error);
-      setError(`Failed to load ${tableName}`);
+      setError(`Failed to load ${tableName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setData(initialValue);
     } finally {
       setLoading(false);
@@ -161,19 +140,10 @@ export function useDatabase<T>(tableName: string, initialValue: T) {
   const updateData = async (newData: T | ((prevData: T) => T)) => {
     try {
       const valueToStore = typeof newData === 'function' ? (newData as Function)(data) : newData;
-      
-      if (isElectron) {
-        // In Electron, we don't directly update the entire dataset
-        // Individual operations are handled by specific methods
-        setData(valueToStore);
-      } else {
-        // Fallback to localStorage
-        setLocalStorageItem(tableName, valueToStore);
-        setData(valueToStore);
-      }
+      setData(valueToStore);
     } catch (error) {
       console.error(`Error updating ${tableName}:`, error);
-      setError(`Failed to update ${tableName}`);
+      setError(`Failed to update ${tableName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -196,290 +166,213 @@ export function useGoatData() {
   const feedPlans = useDatabase('feedPlans', []);
   const feedLogs = useDatabase('feedLogs', []);
 
-  // Electron-specific operations
+  // Production-ready Electron operations
   const electronOperations = {
-    // ... keep existing code (goat, weight, health, breeding, finance operations)
-
-    // Feed operations
-    addFeed: async (feed: any) => {
-      if (window.electronAPI?.isElectron) {
-        const newFeed = await window.electronAPI.addFeed(feed);
-        feeds.reload();
-        return newFeed;
-      }
-      return null;
-    },
-
-    updateFeed: async (id: string, updates: any) => {
-      if (window.electronAPI?.isElectron) {
-        const updatedFeed = await window.electronAPI.updateFeed(id, updates);
-        feeds.reload();
-        return updatedFeed;
-      }
-      return null;
-    },
-
-    deleteFeed: async (id: string) => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.deleteFeed(id);
-        if (success) {
-          feeds.reload();
-        }
-        return success;
-      }
-      return false;
-    },
-
-    // Feed plan operations
-    addFeedPlan: async (plan: any) => {
-      if (window.electronAPI?.isElectron) {
-        const newPlan = await window.electronAPI.addFeedPlan(plan);
-        feedPlans.reload();
-        return newPlan;
-      }
-      return null;
-    },
-
-    updateFeedPlan: async (id: string, updates: any) => {
-      if (window.electronAPI?.isElectron) {
-        const updatedPlan = await window.electronAPI.updateFeedPlan(id, updates);
-        feedPlans.reload();
-        return updatedPlan;
-      }
-      return null;
-    },
-
-    deleteFeedPlan: async (id: string) => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.deleteFeedPlan(id);
-        if (success) {
-          feedPlans.reload();
-        }
-        return success;
-      }
-      return false;
-    },
-
-    // Feed log operations
-    addFeedLog: async (log: any) => {
-      if (window.electronAPI?.isElectron) {
-        const newLog = await window.electronAPI.addFeedLog(log);
-        feedLogs.reload();
-        return newLog;
-      }
-      return null;
-    },
-
     // Goat operations
     addGoat: async (goat: any) => {
-      if (window.electronAPI?.isElectron) {
-        const newGoat = await window.electronAPI.addGoat(goat);
-        goats.reload();
-        return newGoat;
-      }
-      return null;
+      const newGoat = await window.electronAPI!.addGoat(goat);
+      await goats.reload();
+      return newGoat;
     },
     
     updateGoat: async (id: string, updates: any) => {
-      if (window.electronAPI?.isElectron) {
-        const updatedGoat = await window.electronAPI.updateGoat(id, updates);
-        goats.reload();
-        return updatedGoat;
-      }
-      return null;
+      const updatedGoat = await window.electronAPI!.updateGoat(id, updates);
+      await goats.reload();
+      return updatedGoat;
     },
     
     deleteGoat: async (id: string) => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.deleteGoat(id);
-        if (success) {
-          goats.reload();
-          weightRecords.reload();
-          healthRecords.reload();
-        }
-        return success;
+      const success = await window.electronAPI!.deleteGoat(id);
+      if (success) {
+        await Promise.all([
+          goats.reload(),
+          weightRecords.reload(),
+          healthRecords.reload()
+        ]);
       }
-      return false;
+      return success;
     },
 
     // Weight record operations
     addWeightRecord: async (record: any) => {
-      if (window.electronAPI?.isElectron) {
-        const newRecord = await window.electronAPI.addWeightRecord(record);
-        weightRecords.reload();
-        return newRecord;
-      }
-      return null;
+      const newRecord = await window.electronAPI!.addWeightRecord(record);
+      await weightRecords.reload();
+      return newRecord;
     },
 
     updateWeightRecord: async (id: string, updates: any) => {
-      if (window.electronAPI?.isElectron) {
-        const updatedRecord = await window.electronAPI.updateWeightRecord(id, updates);
-        weightRecords.reload();
-        return updatedRecord;
-      }
-      return null;
+      const updatedRecord = await window.electronAPI!.updateWeightRecord(id, updates);
+      await weightRecords.reload();
+      return updatedRecord;
     },
 
     deleteWeightRecord: async (id: string) => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.deleteWeightRecord(id);
-        if (success) {
-          weightRecords.reload();
-        }
-        return success;
+      const success = await window.electronAPI!.deleteWeightRecord(id);
+      if (success) {
+        await weightRecords.reload();
       }
-      return false;
+      return success;
     },
 
     // Health record operations
     addHealthRecord: async (record: any) => {
-      if (window.electronAPI?.isElectron) {
-        const newRecord = await window.electronAPI.addHealthRecord(record);
-        healthRecords.reload();
-        return newRecord;
-      }
-      return null;
+      const newRecord = await window.electronAPI!.addHealthRecord(record);
+      await healthRecords.reload();
+      return newRecord;
     },
 
     updateHealthRecord: async (id: string, updates: any) => {
-      if (window.electronAPI?.isElectron) {
-        const updatedRecord = await window.electronAPI.updateHealthRecord(id, updates);
-        healthRecords.reload();
-        return updatedRecord;
-      }
-      return null;
+      const updatedRecord = await window.electronAPI!.updateHealthRecord(id, updates);
+      await healthRecords.reload();
+      return updatedRecord;
     },
 
     deleteHealthRecord: async (id: string) => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.deleteHealthRecord(id);
-        if (success) {
-          healthRecords.reload();
-        }
-        return success;
+      const success = await window.electronAPI!.deleteHealthRecord(id);
+      if (success) {
+        await healthRecords.reload();
       }
-      return false;
+      return success;
     },
 
     // Breeding record operations
     addBreedingRecord: async (record: any) => {
-      if (window.electronAPI?.isElectron) {
-        const newRecord = await window.electronAPI.addBreedingRecord(record);
-        breedingRecords.reload();
-        return newRecord;
-      }
-      return null;
+      const newRecord = await window.electronAPI!.addBreedingRecord(record);
+      await breedingRecords.reload();
+      return newRecord;
     },
 
     updateBreedingRecord: async (id: string, updates: any) => {
-      if (window.electronAPI?.isElectron) {
-        const updatedRecord = await window.electronAPI.updateBreedingRecord(id, updates);
-        breedingRecords.reload();
-        return updatedRecord;
-      }
-      return null;
+      const updatedRecord = await window.electronAPI!.updateBreedingRecord(id, updates);
+      await breedingRecords.reload();
+      return updatedRecord;
     },
 
     deleteBreedingRecord: async (id: string) => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.deleteBreedingRecord(id);
-        if (success) {
-          breedingRecords.reload();
-        }
-        return success;
+      const success = await window.electronAPI!.deleteBreedingRecord(id);
+      if (success) {
+        await breedingRecords.reload();
       }
-      return false;
-    },
-
-    // Pedigree operations
-    getPedigreeTree: async (goatId: string, generations: number) => {
-      if (window.electronAPI?.isElectron) {
-        return await window.electronAPI.getPedigreeTree(goatId, generations);
-      }
-      return null;
-    },
-
-    calculateInbreedingRisk: async (sireId: string, damId: string) => {
-      if (window.electronAPI?.isElectron) {
-        return await window.electronAPI.calculateInbreedingRisk(sireId, damId);
-      }
-      return null;
-    },
-
-    // Data management
-    exportData: async () => {
-      if (window.electronAPI?.isElectron) {
-        return await window.electronAPI.exportData();
-      }
-      return null;
-    },
-
-    importData: async (data: any) => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.importData(data);
-        if (success) {
-          goats.reload();
-          weightRecords.reload();
-          healthRecords.reload();
-          breedingRecords.reload();
-          financeRecords.reload();
-          feeds.reload();
-          feedPlans.reload();
-          feedLogs.reload();
-        }
-        return success;
-      }
-      return false;
-    },
-
-    clearAll: async () => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.clearAll();
-        if (success) {
-          goats.reload();
-          weightRecords.reload();
-          healthRecords.reload();
-          breedingRecords.reload();
-          financeRecords.reload();
-          feeds.reload();
-          feedPlans.reload();
-          feedLogs.reload();
-        }
-        return success;
-      }
-      return false;
+      return success;
     },
 
     // Finance record operations
     addFinanceRecord: async (record: any) => {
-      if (window.electronAPI?.isElectron) {
-        const newRecord = await window.electronAPI.addFinanceRecord(record);
-        financeRecords.reload();
-        return newRecord;
-      }
-      return null;
+      const newRecord = await window.electronAPI!.addFinanceRecord(record);
+      await financeRecords.reload();
+      return newRecord;
     },
 
     updateFinanceRecord: async (id: string, updates: any) => {
-      if (window.electronAPI?.isElectron) {
-        const updatedRecord = await window.electronAPI.updateFinanceRecord(id, updates);
-        financeRecords.reload();
-        return updatedRecord;
-      }
-      return null;
+      const updatedRecord = await window.electronAPI!.updateFinanceRecord(id, updates);
+      await financeRecords.reload();
+      return updatedRecord;
     },
 
     deleteFinanceRecord: async (id: string) => {
-      if (window.electronAPI?.isElectron) {
-        const success = await window.electronAPI.deleteFinanceRecord(id);
-        if (success) {
-          financeRecords.reload();
-        }
-        return success;
+      const success = await window.electronAPI!.deleteFinanceRecord(id);
+      if (success) {
+        await financeRecords.reload();
       }
-      return false;
+      return success;
     },
+
+    // Feed operations
+    addFeed: async (feed: any) => {
+      const newFeed = await window.electronAPI!.addFeed(feed);
+      await feeds.reload();
+      return newFeed;
+    },
+
+    updateFeed: async (id: string, updates: any) => {
+      const updatedFeed = await window.electronAPI!.updateFeed(id, updates);
+      await feeds.reload();
+      return updatedFeed;
+    },
+
+    deleteFeed: async (id: string) => {
+      const success = await window.electronAPI!.deleteFeed(id);
+      if (success) {
+        await feeds.reload();
+      }
+      return success;
+    },
+
+    // Feed plan operations
+    addFeedPlan: async (plan: any) => {
+      const newPlan = await window.electronAPI!.addFeedPlan(plan);
+      await feedPlans.reload();
+      return newPlan;
+    },
+
+    updateFeedPlan: async (id: string, updates: any) => {
+      const updatedPlan = await window.electronAPI!.updateFeedPlan(id, updates);
+      await feedPlans.reload();
+      return updatedPlan;
+    },
+
+    deleteFeedPlan: async (id: string) => {
+      const success = await window.electronAPI!.deleteFeedPlan(id);
+      if (success) {
+        await feedPlans.reload();
+      }
+      return success;
+    },
+
+    // Feed log operations
+    addFeedLog: async (log: any) => {
+      const newLog = await window.electronAPI!.addFeedLog(log);
+      await feedLogs.reload();
+      return newLog;
+    },
+
+    // Pedigree operations
+    getPedigreeTree: async (goatId: string, generations: number) => {
+      return await window.electronAPI!.getPedigreeTree(goatId, generations);
+    },
+
+    calculateInbreedingRisk: async (sireId: string, damId: string) => {
+      return await window.electronAPI!.calculateInbreedingRisk(sireId, damId);
+    },
+
+    // Data management
+    exportData: async () => {
+      return await window.electronAPI!.exportData();
+    },
+
+    importData: async (data: any) => {
+      const success = await window.electronAPI!.importData(data);
+      if (success) {
+        await Promise.all([
+          goats.reload(),
+          weightRecords.reload(),
+          healthRecords.reload(),
+          breedingRecords.reload(),
+          financeRecords.reload(),
+          feeds.reload(),
+          feedPlans.reload(),
+          feedLogs.reload()
+        ]);
+      }
+      return success;
+    },
+
+    clearAll: async () => {
+      const success = await window.electronAPI!.clearAll();
+      if (success) {
+        await Promise.all([
+          goats.reload(),
+          weightRecords.reload(),
+          healthRecords.reload(),
+          breedingRecords.reload(),
+          financeRecords.reload(),
+          feeds.reload(),
+          feedPlans.reload(),
+          feedLogs.reload()
+        ]);
+      }
+      return success;
+    }
   };
 
   return {
@@ -500,6 +393,7 @@ export function useGoatData() {
     feedLogs: feedLogs.data,
     setFeedLogs: feedLogs.setData,
     loading: goats.loading || weightRecords.loading || healthRecords.loading || breedingRecords.loading || financeRecords.loading || feeds.loading || feedPlans.loading || feedLogs.loading,
+    error: goats.error || weightRecords.error || healthRecords.error || breedingRecords.error || financeRecords.error || feeds.error || feedPlans.error || feedLogs.error,
     ...electronOperations
   };
 }

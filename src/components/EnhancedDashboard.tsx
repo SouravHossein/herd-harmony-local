@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import WeatherWidget from './WeatherWidget';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DollarSign, Users, Heart, TrendingUp, Camera, Calendar, Bell, Award } from 'lucide-react';
+import { DollarSign, Users, Heart, TrendingUp, Camera, Award, Bell } from 'lucide-react';
 import { useGoatContext } from '@/context/GoatContext';
 import {
   Chart as ChartJS,
@@ -18,7 +17,6 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import BackendStatus from './BackendStatus';
 
 ChartJS.register(
   CategoryScale,
@@ -39,11 +37,11 @@ export default function EnhancedDashboard() {
     breedingRecords,
     financeRecords,
     getUpcomingHealthReminders,
+    loading,
+    error
   } = useGoatContext();
   
   const [recentPhotos, setRecentPhotos] = useState<Array<{ goatId: string; goatName: string; photo: string }>>([]);
-  
-  const isElectronAvailable = Boolean(window.electronAPI?.isElectron);
 
   useEffect(() => {
     // Load recent photos from goats with images
@@ -56,7 +54,32 @@ export default function EnhancedDashboard() {
     setRecentPhotos(photos);
   }, [goats]);
 
-  // Calculate enhanced statistics
+  // Handle loading and error states
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 bg-muted rounded w-1/3"></div>
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-muted rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <div className="text-destructive font-medium">Error loading dashboard data</div>
+          <div className="text-sm text-muted-foreground mt-1">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate production-ready statistics
   const stats = {
     totalGoats: goats.length,
     activeGoats: goats.filter(goat => goat.status === 'active').length,
@@ -68,7 +91,7 @@ export default function EnhancedDashboard() {
     }).length,
     upcomingReminders: getUpcomingHealthReminders().length,
     averageWeight: weightRecords.length > 0 
-      ? weightRecords.reduce((sum, r) => sum + r.weight, 0) / weightRecords.length 
+      ? Math.round((weightRecords.reduce((sum, r) => sum + r.weight, 0) / weightRecords.length) * 10) / 10
       : 0,
     recentBreedings: breedingRecords.filter(br => {
       const breedingDate = new Date(br.breedingDate);
@@ -92,8 +115,8 @@ export default function EnhancedDashboard() {
     datasets: [{
       label: 'Number of Goats',
       data: Object.values(breedDistribution),
-      backgroundColor: 'rgba(59, 130, 246, 0.6)',
-      borderColor: 'rgba(59, 130, 246, 1)',
+      backgroundColor: 'hsl(var(--primary) / 0.6)',
+      borderColor: 'hsl(var(--primary))',
       borderWidth: 1,
     }],
   };
@@ -115,7 +138,7 @@ export default function EnhancedDashboard() {
       });
       
       const avgWeight = monthRecords.length > 0 
-        ? monthRecords.reduce((sum, r) => sum + r.weight, 0) / monthRecords.length 
+        ? Math.round((monthRecords.reduce((sum, r) => sum + r.weight, 0) / monthRecords.length) * 10) / 10
         : 0;
       
       months.push(monthStr);
@@ -127,8 +150,8 @@ export default function EnhancedDashboard() {
       datasets: [{
         label: 'Average Weight (kg)',
         data: weights,
-        borderColor: 'rgba(34, 197, 94, 1)',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        borderColor: 'hsl(var(--primary))',
+        backgroundColor: 'hsl(var(--primary) / 0.1)',
         tension: 0.1,
       }],
     };
@@ -146,8 +169,6 @@ export default function EnhancedDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <BackendStatus isElectronAvailable={isElectronAvailable} />
-      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -161,7 +182,7 @@ export default function EnhancedDashboard() {
         </div>
       </div>
 
-      {/* Enhanced Quick Stats Grid */}
+      {/* Production Stats Grid */}
       <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -195,9 +216,9 @@ export default function EnhancedDashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.averageWeight.toFixed(1)} kg</div>
+            <div className="text-2xl font-bold">{stats.averageWeight} kg</div>
             <p className="text-xs text-muted-foreground">
-              Across all goats
+              Across {weightRecords.length} records
             </p>
           </CardContent>
         </Card>
@@ -265,7 +286,7 @@ export default function EnhancedDashboard() {
             {breedingRecords.length > 0 && (
               <div className="mt-2">
                 <p className="text-xs text-muted-foreground">
-                  Last breeding: {new Date(breedingRecords[breedingRecords.length - 1]?.breedingDate).toLocaleDateString()}
+                  Total records: {breedingRecords.length}
                 </p>
               </div>
             )}
@@ -287,7 +308,7 @@ export default function EnhancedDashboard() {
               {stats.totalFinanceValue >= 0 ? "Profit" : "Loss"}
             </Badge>
             <p className="text-xs text-muted-foreground mt-1">
-              {financeRecords.length} transactions recorded
+              {financeRecords.length} transactions
             </p>
           </CardContent>
         </Card>
@@ -300,38 +321,52 @@ export default function EnhancedDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {Object.keys(breedDistribution).reduce((a, b) => 
-                breedDistribution[a] > breedDistribution[b] ? a : b, ''
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {Math.max(...Object.values(breedDistribution))} goats
-            </p>
+            {Object.keys(breedDistribution).length > 0 ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {Object.keys(breedDistribution).reduce((a, b) => 
+                    breedDistribution[a] > breedDistribution[b] ? a : b, ''
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {Math.max(...Object.values(breedDistribution))} goats
+                </p>
+              </>
+            ) : (
+              <div className="text-muted-foreground">No breed data</div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Breed Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Bar options={chartOptions} data={breedChartData} />
-          </CardContent>
-        </Card>
+      {Object.keys(breedDistribution).length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Breed Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Bar options={chartOptions} data={breedChartData} />
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Weight Trends (6 Months)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Line options={chartOptions} data={weightTrendData} />
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Weight Trends (6 Months)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {weightTrendData.datasets[0].data.some(w => w > 0) ? (
+                <Line options={chartOptions} data={weightTrendData} />
+              ) : (
+                <div className="flex items-center justify-center h-64 text-muted-foreground">
+                  No weight data available for chart
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Health Reminders */}
       {stats.upcomingReminders > 0 && (
