@@ -90,7 +90,6 @@ export function GoatProvider({ children }: { children: ReactNode }) {
 
   const importData = async (data: any) => {
     if (isElectronAvailable) {
-      // Handle Electron import
       return false;
     } else {
       localData.setGoats(data.goats || []);
@@ -192,7 +191,10 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     loading: localData.loading,
     error: localData.error,
     addGoat: localData.addGoat,
-    updateGoat: localData.updateGoat,
+    updateGoat: async (id: string, updates: any) => {
+      localData.setGoats(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+      return null;
+    },
     deleteGoat: localData.deleteGoat,
     addWeightRecord: async (record: any) => { 
       const newRecord = { ...record, id: Date.now().toString(), createdAt: new Date() };
