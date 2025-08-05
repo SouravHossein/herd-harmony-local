@@ -35,20 +35,20 @@ function createWindow() {
     },
   });
 
-  const menu = Menu.buildFromTemplate([
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'Open DevTools',
-          accelerator: 'Ctrl+Shift+I',
-          click: () => mainWindow.webContents.openDevTools(),
-        },
-        { label: 'Exit', accelerator: 'Ctrl+W', click: () => app.quit() },
-      ],
-    },
-  ]);
-  Menu.setApplicationMenu(menu);
+  // const menu = Menu.buildFromTemplate([
+  //   {
+  //     label: 'File',
+  //     submenu: [
+  //       {
+  //         label: 'Open DevTools',
+  //         accelerator: 'Ctrl+Shift+I',
+  //         click: () => mainWindow.webContents.openDevTools(),
+  //       },
+  //       { label: 'Exit', accelerator: 'Ctrl+W', click: () => app.quit() },
+  //     ],
+  //   },
+  // ]);
+  // Menu.setApplicationMenu(menu);
 
 if (isDev) {
   // ✅ Load Vite Dev Server during development

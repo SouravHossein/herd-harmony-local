@@ -31,6 +31,7 @@ interface LayoutProps {
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'weight', label: 'Weight', icon: Scale },
   { id: 'goats', label: 'Goats', icon: Users },
   { id: 'health', label: 'Health', icon: Heart },
   { id: 'breeding', label: 'Breeding', icon: Baby },

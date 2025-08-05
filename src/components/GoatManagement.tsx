@@ -4,10 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate, calculateAge } from '@/lib/utils';
 import { 
@@ -20,6 +17,8 @@ import {
   Activity
 } from 'lucide-react';
 import { Goat } from '@/types/goat';
+import GoatForm from './GoatForm';
+import GoatLifeTimeline from './media/GoatLifeTimeline';
 
 export function GoatManagement() {
   const { goats, addGoat, updateGoat, deleteGoat, getGoatWeightHistory } = useGoatContext();
@@ -38,19 +37,7 @@ export function GoatManagement() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleAddGoat = (formData: FormData) => {
-    const goatData = {
-      name: formData.get('name') as string,
-      breed: formData.get('breed') as string,
-      tagNumber: formData.get('tagNumber') as string,
-      gender: formData.get('gender') as 'male' | 'female',
-      dateOfBirth: new Date(formData.get('dateOfBirth') as string),
-      color: formData.get('color') as string,
-      status: 'active' as const,
-      hornStatus: formData.get('hornStatus') as 'horned' | 'polled' | 'disbudded',
-      notes: formData.get('notes') as string,
-    };
-
+  const handleAddGoat = (goatData: Partial<Goat>) => {
     // Check for duplicate tag number
     if (goats.some(goat => goat.tagNumber === goatData.tagNumber)) {
       toast({
@@ -61,7 +48,16 @@ export function GoatManagement() {
       return;
     }
 
-    addGoat(goatData);
+    // Create the goat with required fields
+    const newGoat = {
+      ...goatData,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: goatData.status || 'active',
+    } as Goat;
+
+    addGoat(newGoat);
     setIsAddDialogOpen(false);
     toast({
       title: "Success",
@@ -69,23 +65,11 @@ export function GoatManagement() {
     });
   };
 
-  const handleUpdateGoat = (formData: FormData) => {
+  const handleUpdateGoat = (goatData: Partial<Goat>) => {
     if (!editingGoat) return;
 
-    const updates = {
-      name: formData.get('name') as string,
-      breed: formData.get('breed') as string,
-      tagNumber: formData.get('tagNumber') as string,
-      gender: formData.get('gender') as 'male' | 'female',
-      dateOfBirth: new Date(formData.get('dateOfBirth') as string),
-      color: formData.get('color') as string,
-      status: formData.get('status') as 'active' | 'sold' | 'deceased',
-      hornStatus: formData.get('hornStatus') as 'horned' | 'polled' | 'disbudded',
-      notes: formData.get('notes') as string,
-    };
-
     // Check for duplicate tag number (excluding current goat)
-    if (goats.some(goat => goat.tagNumber === updates.tagNumber && goat.id !== editingGoat.id)) {
+    if (goats.some(goat => goat.tagNumber === goatData.tagNumber && goat.id !== editingGoat.id)) {
       toast({
         title: "Error",
         description: "A goat with this tag number already exists.",
@@ -94,11 +78,16 @@ export function GoatManagement() {
       return;
     }
 
+    const updates = {
+      ...goatData,
+      updatedAt: new Date(),
+    };
+
     updateGoat(editingGoat.id, updates);
     setEditingGoat(null);
     toast({
       title: "Success",
-      description: `${updates.name} has been updated.`,
+      description: `${goatData.name} has been updated.`,
     });
   };
 
@@ -121,20 +110,13 @@ export function GoatManagement() {
           <p className="text-muted-foreground">Manage your goat herd</p>
         </div>
         
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-primary hover:bg-primary-glow shadow-glow">
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Goat
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Goat</DialogTitle>
-            </DialogHeader>
-            <GoatForm onSubmit={handleAddGoat} />
-          </DialogContent>
-        </Dialog>
+        <Button 
+          className="bg-gradient-primary hover:bg-primary-glow shadow-glow"
+          onClick={() => setIsAddDialogOpen(true)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Goat
+        </Button>
       </div>
 
       {/* Filters */}
@@ -164,7 +146,6 @@ export function GoatManagement() {
           </div>
         </CardContent>
       </Card>
-
       {/* Goats Grid */}
       {filteredGoats.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -173,6 +154,7 @@ export function GoatManagement() {
             const currentWeight = weightHistory[weightHistory.length - 1]?.weight;
             
             return (
+              // <GoatLifeTimeline goat={goat} />
               <Card key={goat.id} className="shadow-card hover:shadow-soft transition-all duration-300">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -275,156 +257,22 @@ export function GoatManagement() {
         </Card>
       )}
 
-      {/* Edit Dialog */}
+      {/* Add New Goat Dialog */}
+      <GoatForm
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSubmit={handleAddGoat}
+      />
+
+      {/* Edit Goat Dialog */}
       {editingGoat && (
-        <Dialog open={!!editingGoat} onOpenChange={() => setEditingGoat(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit {editingGoat.name}</DialogTitle>
-            </DialogHeader>
-            <GoatForm 
-              onSubmit={handleUpdateGoat} 
-              initialData={editingGoat}
-              isEditing 
-            />
-          </DialogContent>
-        </Dialog>
+        <GoatForm
+          goat={editingGoat}
+          isOpen={!!editingGoat}
+          onClose={() => setEditingGoat(null)}
+          onSubmit={handleUpdateGoat}
+        />
       )}
     </div>
-  );
-}
-
-interface GoatFormProps {
-  onSubmit: (formData: FormData) => void;
-  initialData?: Goat;
-  isEditing?: boolean;
-}
-
-function GoatForm({ onSubmit, initialData, isEditing = false }: GoatFormProps) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    onSubmit(formData);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Name *</Label>
-          <Input 
-            id="name" 
-            name="name" 
-            defaultValue={initialData?.name}
-            required 
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="tagNumber">Tag Number *</Label>
-          <Input 
-            id="tagNumber" 
-            name="tagNumber" 
-            defaultValue={initialData?.tagNumber}
-            required 
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="breed">Breed *</Label>
-          <Input 
-            id="breed" 
-            name="breed" 
-            defaultValue={initialData?.breed}
-            required 
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="color">Color *</Label>
-          <Input 
-            id="color" 
-            name="color" 
-            defaultValue={initialData?.color}
-            required 
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="gender">Gender *</Label>
-          <Select name="gender" defaultValue={initialData?.gender} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select gender" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-          <Input 
-            id="dateOfBirth" 
-            name="dateOfBirth" 
-            type="date"
-            defaultValue={initialData?.dateOfBirth ? 
-              new Date(initialData.dateOfBirth).toISOString().split('T')[0] : ''
-            }
-            required 
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="hornStatus">Horn Status *</Label>
-          <Select name="hornStatus" defaultValue={initialData?.hornStatus} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select horn status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="horned">Horned</SelectItem>
-              <SelectItem value="polled">Polled (Naturally hornless)</SelectItem>
-              <SelectItem value="disbudded">Disbudded</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {isEditing && (
-          <div className="space-y-2">
-            <Label htmlFor="status">Status *</Label>
-            <Select name="status" defaultValue={initialData?.status} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="sold">Sold</SelectItem>
-                <SelectItem value="deceased">Deceased</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea 
-          id="notes" 
-          name="notes" 
-          placeholder="Additional notes about this goat..."
-          defaultValue={initialData?.notes}
-          rows={3}
-        />
-      </div>
-
-      <div className="flex justify-end space-x-2 pt-4">
-        <Button type="submit" className="bg-gradient-primary">
-          {isEditing ? 'Update Goat' : 'Add Goat'}
-        </Button>
-      </div>
-    </form>
   );
 }

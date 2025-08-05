@@ -12,6 +12,7 @@ import GrowthOptimizer from '@/components/GrowthOptimizer';
 import BreedingPlanner from '@/components/breeding/BreedingPlanner';
 import { WeatherDashboard } from '@/components/weather/WeatherDashboard';
 import Settings from '@/components/Settings';
+import { WeightTracking } from '@/components/WeightTracking';
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -30,6 +31,8 @@ export default function Index() {
         return <AllInOneDashboard />;
       case 'goats':
         return <GoatManagement />;
+      case 'weight':
+        return <WeightTracking />;
       case 'health':
         return <HealthDashboard />;
       case 'breeding':
