@@ -15,8 +15,13 @@ import {
   Baby,
   Database,
   Shield,
-  CloudSun
+  CloudSun,
+  Settings,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -38,9 +43,34 @@ const navigationItems = [
   { id: 'growth-optimizer', label: 'Growth', icon: TrendingUp },
   { id: 'data', label: 'Data', icon: Database },
   { id: 'backup', label: 'Backup', icon: Shield },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export function Layout({ children, activeSection, onSectionChange }: LayoutProps) {
+  const { theme, setTheme } = useTheme();
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light':
+        return Sun;
+      case 'dark':
+        return Moon;
+      case 'system':
+        return Monitor;
+      default:
+        return Monitor;
+    }
+  };
+
+  const cycleTheme = () => {
+    const themes = ['light', 'dark', 'system'] as const;
+    const currentIndex = themes.indexOf(theme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    setTheme(themes[nextIndex]);
+  };
+
+  const ThemeIcon = getThemeIcon();
+
   return (
     <div className="min-h-screen bg-background">
       <div className="flex">
@@ -68,6 +98,18 @@ export function Layout({ children, activeSection, onSectionChange }: LayoutProps
               );
             })}
           </nav>
+          
+          {/* Theme Toggle in Sidebar */}
+          <div className="absolute bottom-4 left-3 right-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={cycleTheme}
+            >
+              <ThemeIcon className="mr-2 h-4 w-4" />
+              {theme.charAt(0).toUpperCase() + theme.slice(1)} Theme
+            </Button>
+          </div>
         </div>
 
         {/* Main Content */}

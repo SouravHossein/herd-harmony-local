@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import  Dashboard  from '@/components/Dashboard';
@@ -13,6 +14,7 @@ import { HealthAI } from '@/components/HealthAI';
 import GrowthOptimizer from '@/components/GrowthOptimizer';
 import BreedingPlanner from '@/components/breeding/BreedingPlanner';
 import { WeatherDashboard } from '@/components/weather/WeatherDashboard';
+import Settings from '@/components/Settings';
 import { GoatProvider } from '@/context/GoatContext';
 
 export default function Index() {
@@ -54,6 +56,8 @@ export default function Index() {
         return <DataManagement />;
       case 'backup':
         return <BackupManager />;
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard />;
     }
