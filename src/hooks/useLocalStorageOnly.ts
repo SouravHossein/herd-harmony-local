@@ -1,74 +1,133 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
-function getLocalStorageItem<T>(key: string, defaultValue: T): T {
-  try {
-    const item = window.localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
-  } catch (error) {
-    console.error(`Error reading localStorage key "${key}":`, error);
-    return defaultValue;
-  }
-}
-
-function setLocalStorageItem<T>(key: string, value: T): void {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error(`Error setting localStorage key "${key}":`, error);
-  }
-}
-
-export function useLocalStorageOnly<T>(key: string, initialValue: T) {
+function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
-    return getLocalStorageItem(key, initialValue);
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
   });
 
-  const setValue = (value: T | ((val: T) => T)) => {
+  const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
-      setLocalStorageItem(key, valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
       console.error(`Error setting localStorage key "${key}":`, error);
     }
-  };
+  }, [key, storedValue]);
 
   return [storedValue, setValue] as const;
 }
 
-export function useGoatDataLocal() {
-  const [goats, setGoats] = useLocalStorageOnly('goats', []);
-  const [weightRecords, setWeightRecords] = useLocalStorageOnly('weightRecords', []);
-  const [healthRecords, setHealthRecords] = useLocalStorageOnly('healthRecords', []);
-  const [breedingRecords, setBreedingRecords] = useLocalStorageOnly('breedingRecords', []);
-  const [financeRecords, setFinanceRecords] = useLocalStorageOnly('financeRecords', []);
-  const [feeds, setFeeds] = useLocalStorageOnly('feeds', []);
-  const [feedPlans, setFeedPlans] = useLocalStorageOnly('feedPlans', []);
-  const [feedLogs, setFeedLogs] = useLocalStorageOnly('feedLogs', []);
+export function useGoatData() {
+  const [goats, setGoats] = useLocalStorage('goats', []);
+  const [weightRecords, setWeightRecords] = useLocalStorage('weightRecords', []);
+  const [healthRecords, setHealthRecords] = useLocalStorage('healthRecords', []);
+  const [breedingRecords, setBreedingRecords] = useLocalStorage('breedingRecords', []);
+  const [financeRecords, setFinanceRecords] = useLocalStorage('financeRecords', []);
+  const [feeds, setFeeds] = useLocalStorage('feeds', []);
+  const [feedPlans, setFeedPlans] = useLocalStorage('feedPlans', []);
+  const [feedLogs, setFeedLogs] = useLocalStorage('feedLogs', []);
 
-  // Generate ID utility
-  const generateId = () => {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  };
-
-  const addGoat = (goat: any) => {
-    const newGoat = { ...goat, id: generateId(), createdAt: new Date(), updatedAt: new Date() };
-    setGoats(prev => [...prev, newGoat]);
+  // Simulate async operations for consistency with Electron API
+  const addGoat = async (goat: any) => {
+    const newGoat = { ...goat, id: goat.id || uuidv4(), createdAt: new Date().toISOString() };
+    setGoats((prev: any[]) => [...prev, newGoat]);
     return newGoat;
   };
 
-  const updateGoat = (id: string, updates: any) => {
-    setGoats(prev => prev.map(goat => 
-      goat.id === id ? { ...goat, ...updates, updatedAt: new Date() } : goat
-    ));
+  const updateGoat = async (id: string, updates: any) => {
+    setGoats((prev: any[]) => 
+      prev.map(goat => goat.id === id ? { ...goat, ...updates } : goat)
+    );
+    return { id, ...updates };
   };
 
-  const deleteGoat = (id: string) => {
-    setGoats(prev => prev.filter(goat => goat.id !== id));
+  const deleteGoat = async (id: string) => {
+    setGoats((prev: any[]) => prev.filter(goat => goat.id !== id));
     // Also clean up related records
-    setWeightRecords(prev => prev.filter(record => record.goatId !== id));
-    setHealthRecords(prev => prev.filter(record => record.goatId !== id));
+    setWeightRecords((prev: any[]) => prev.filter(record => record.goatId !== id));
+    setHealthRecords((prev: any[]) => prev.filter(record => record.goatId !== id));
+    return true;
+  };
+
+  const addWeightRecord = async (record: any) => {
+    const newRecord = { ...record, id: record.id || uuidv4(), createdAt: new Date().toISOString() };
+    setWeightRecords((prev: any[]) => [...prev, newRecord]);
+    return newRecord;
+  };
+
+  const updateWeightRecord = async (id: string, updates: any) => {
+    setWeightRecords((prev: any[]) => 
+      prev.map(record => record.id === id ? { ...record, ...updates } : record)
+    );
+    return { id, ...updates };
+  };
+
+  const deleteWeightRecord = async (id: string) => {
+    setWeightRecords((prev: any[]) => prev.filter(record => record.id !== id));
+    return true;
+  };
+
+  const addHealthRecord = async (record: any) => {
+    const newRecord = { ...record, id: record.id || uuidv4(), createdAt: new Date().toISOString() };
+    setHealthRecords((prev: any[]) => [...prev, newRecord]);
+    return newRecord;
+  };
+
+  const updateHealthRecord = async (id: string, updates: any) => {
+    setHealthRecords((prev: any[]) => 
+      prev.map(record => record.id === id ? { ...record, ...updates } : record)
+    );
+    return { id, ...updates };
+  };
+
+  const deleteHealthRecord = async (id: string) => {
+    setHealthRecords((prev: any[]) => prev.filter(record => record.id !== id));
+    return true;
+  };
+
+  const addBreedingRecord = async (record: any) => {
+    const newRecord = { ...record, id: record.id || uuidv4(), createdAt: new Date().toISOString() };
+    setBreedingRecords((prev: any[]) => [...prev, newRecord]);
+    return newRecord;
+  };
+
+  const updateBreedingRecord = async (id: string, updates: any) => {
+    setBreedingRecords((prev: any[]) => 
+      prev.map(record => record.id === id ? { ...record, ...updates } : record)
+    );
+    return { id, ...updates };
+  };
+
+  const deleteBreedingRecord = async (id: string) => {
+    setBreedingRecords((prev: any[]) => prev.filter(record => record.id !== id));
+    return true;
+  };
+
+  const addFinanceRecord = async (record: any) => {
+    const newRecord = { ...record, id: record.id || uuidv4(), createdAt: new Date().toISOString() };
+    setFinanceRecords((prev: any[]) => [...prev, newRecord]);
+    return newRecord;
+  };
+
+  const updateFinanceRecord = async (id: string, updates: any) => {
+    setFinanceRecords((prev: any[]) => 
+      prev.map(record => record.id === id ? { ...record, ...updates } : record)
+    );
+    return { id, ...updates };
+  };
+
+  const deleteFinanceRecord = async (id: string) => {
+    setFinanceRecords((prev: any[]) => prev.filter(record => record.id !== id));
+    return true;
   };
 
   return {
@@ -88,10 +147,22 @@ export function useGoatDataLocal() {
     setFeedPlans,
     feedLogs,
     setFeedLogs,
+    loading: false,
+    error: null,
     addGoat,
     updateGoat,
     deleteGoat,
-    loading: false,
-    error: null
+    addWeightRecord,
+    updateWeightRecord,
+    deleteWeightRecord,
+    addHealthRecord,
+    updateHealthRecord,
+    deleteHealthRecord,
+    addBreedingRecord,
+    updateBreedingRecord,
+    deleteBreedingRecord,
+    addFinanceRecord,
+    updateFinanceRecord,
+    deleteFinanceRecord,
   };
 }

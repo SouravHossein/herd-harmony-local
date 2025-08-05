@@ -1,7 +1,8 @@
 
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import  Dashboard  from '@/components/Dashboard';
+import Dashboard from '@/components/Dashboard';
+import AllInOneDashboard from '@/components/AllInOneDashboard';
 import { GoatManagement } from '@/components/GoatManagement';
 import { WeightTracking } from '@/components/WeightTracking';
 import { HealthDashboard } from '@/components/HealthDashboard';
@@ -15,7 +16,6 @@ import GrowthOptimizer from '@/components/GrowthOptimizer';
 import BreedingPlanner from '@/components/breeding/BreedingPlanner';
 import { WeatherDashboard } from '@/components/weather/WeatherDashboard';
 import Settings from '@/components/Settings';
-import { GoatProvider } from '@/context/GoatContext';
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -31,6 +31,8 @@ export default function Index() {
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
+        return <AllInOneDashboard />;
+      case 'classic-dashboard':
         return <Dashboard />;
       case 'goats':
         return <GoatManagement />;
@@ -59,15 +61,13 @@ export default function Index() {
       case 'settings':
         return <Settings />;
       default:
-        return <Dashboard />;
+        return <AllInOneDashboard />;
     }
   };
 
   return (
-    <GoatProvider>
-      <Layout activeSection={activeSection} onSectionChange={setActiveSection}>
-        {renderContent()}
-      </Layout>
-    </GoatProvider>
+    <Layout activeSection={activeSection} onSectionChange={setActiveSection}>
+      {renderContent()}
+    </Layout>
   );
 }

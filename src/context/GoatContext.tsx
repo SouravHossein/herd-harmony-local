@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useGoatData } from '@/hooks/useDatabase';
+import { useGoatData as useElectronData } from '@/hooks/useDatabase';
+import { useGoatData as useLocalStorageData } from '@/hooks/useLocalStorageOnly';
 import { Goat, WeightRecord, HealthRecord, BreedingRecord, Feed, FeedPlan, FeedLog } from '@/types/goat';
 
 interface GoatContextType {
@@ -49,24 +50,27 @@ interface GoatContextType {
 const GoatContext = createContext<GoatContextType | undefined>(undefined);
 
 export function GoatProvider({ children }: { children: ReactNode }) {
-  // Only use Electron backend - no localStorage fallback
-  if (!window.electronAPI?.isElectron) {
-    throw new Error('This application requires Electron environment. Please run the desktop application.');
-  }
+  // Check if running in Electron environment
+  const isElectron = window.electronAPI?.isElectron;
   
-  const electronData = useGoatData();
+  // Use appropriate data layer based on environment
+  const electronData = isElectron ? useElectronData() : null;
+  const localStorageData = !isElectron ? useLocalStorageData() : null;
   
-  // Utility functions that work with Electron data
+  // Use Electron data if available, otherwise localStorage
+  const currentData = electronData || localStorageData!;
+  
+  // Utility functions that work with both data sources
   const getGoatWeightHistory = (goatId: string): WeightRecord[] => {
-    return (electronData.weightRecords || []).filter((record: WeightRecord) => record.goatId === goatId);
+    return (currentData.weightRecords || []).filter((record: WeightRecord) => record.goatId === goatId);
   };
 
   const getGoatHealthHistory = (goatId: string): HealthRecord[] => {
-    return (electronData.healthRecords || []).filter((record: HealthRecord) => record.goatId === goatId);
+    return (currentData.healthRecords || []).filter((record: HealthRecord) => record.goatId === goatId);
   };
 
   const getUpcomingHealthReminders = (): HealthRecord[] => {
-    const records = electronData.healthRecords || [];
+    const records = currentData.healthRecords || [];
     const now = new Date();
     return records.filter((record: HealthRecord) => 
       record.status === 'scheduled' && 
@@ -76,21 +80,70 @@ export function GoatProvider({ children }: { children: ReactNode }) {
   };
 
   const exportData = async () => {
-    return electronData.exportData();
+    if (isElectron && electronData) {
+      return electronData.exportData();
+    }
+    // Browser export functionality
+    const data = {
+      goats: currentData.goats,
+      weightRecords: currentData.weightRecords,
+      healthRecords: currentData.healthRecords,
+      breedingRecords: currentData.breedingRecords,
+      financeRecords: currentData.financeRecords,
+      feeds: currentData.feeds,
+      feedPlans: currentData.feedPlans,
+      feedLogs: currentData.feedLogs,
+      exportDate: new Date().toISOString()
+    };
+    return data;
   };
 
   const importData = async (data: any) => {
-    return electronData.importData(data);
+    if (isElectron && electronData) {
+      return electronData.importData(data);
+    }
+    // Browser import functionality
+    try {
+      if (data.goats) currentData.setGoats(data.goats);
+      if (data.weightRecords) currentData.setWeightRecords(data.weightRecords);
+      if (data.healthRecords) currentData.setHealthRecords(data.healthRecords);
+      if (data.breedingRecords) currentData.setBreedingRecords(data.breedingRecords);
+      if (data.financeRecords) currentData.setFinanceRecords(data.financeRecords);
+      if (data.feeds) currentData.setFeeds(data.feeds);
+      if (data.feedPlans) currentData.setFeedPlans(data.feedPlans);
+      if (data.feedLogs) currentData.setFeedLogs(data.feedLogs);
+      return true;
+    } catch (error) {
+      console.error('Import failed:', error);
+      return false;
+    }
   };
 
   const clearAllData = async () => {
-    return electronData.clearAll();
+    if (isElectron && electronData) {
+      return electronData.clearAll();
+    }
+    // Browser clear functionality
+    try {
+      currentData.setGoats([]);
+      currentData.setWeightRecords([]);
+      currentData.setHealthRecords([]);
+      currentData.setBreedingRecords([]);
+      currentData.setFinanceRecords([]);
+      currentData.setFeeds([]);
+      currentData.setFeedPlans([]);
+      currentData.setFeedLogs([]);
+      return true;
+    } catch (error) {
+      console.error('Clear failed:', error);
+      return false;
+    }
   };
 
   const getFarmStats = () => {
-    const goats = electronData.goats || [];
-    const weightRecords = electronData.weightRecords || [];
-    const healthRecords = electronData.healthRecords || [];
+    const goats = currentData.goats || [];
+    const weightRecords = currentData.weightRecords || [];
+    const healthRecords = currentData.healthRecords || [];
 
     return {
       totalGoats: goats.length,
@@ -102,57 +155,41 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     };
   };
   
-  // Production-ready context value using only Electron backend
+  // Create unified context value that works with both backends
   const contextValue: GoatContextType = {
-    goats: electronData.goats || [],
-    setGoats: () => {
-      console.warn('Direct setGoats not supported in Electron mode. Use addGoat, updateGoat, deleteGoat instead.');
-    },
-    weightRecords: electronData.weightRecords || [],
-    setWeightRecords: () => {
-      console.warn('Direct setWeightRecords not supported in Electron mode. Use addWeightRecord, updateWeightRecord, deleteWeightRecord instead.');
-    },
-    healthRecords: electronData.healthRecords || [],
-    setHealthRecords: () => {
-      console.warn('Direct setHealthRecords not supported in Electron mode. Use addHealthRecord, updateHealthRecord, deleteHealthRecord instead.');
-    },
-    breedingRecords: electronData.breedingRecords || [],
-    setBreedingRecords: () => {
-      console.warn('Direct setBreedingRecords not supported in Electron mode. Use addBreedingRecord, updateBreedingRecord, deleteBreedingRecord instead.');
-    },
-    financeRecords: electronData.financeRecords || [],
-    setFinanceRecords: () => {
-      console.warn('Direct setFinanceRecords not supported in Electron mode. Use addFinanceRecord, updateFinanceRecord, deleteFinanceRecord instead.');
-    },
-    feeds: electronData.feeds || [],
-    setFeeds: () => {
-      console.warn('Direct setFeeds not supported in Electron mode. Use feed management methods instead.');
-    },
-    feedPlans: electronData.feedPlans || [],
-    setFeedPlans: () => {
-      console.warn('Direct setFeedPlans not supported in Electron mode. Use feed plan management methods instead.');
-    },
-    feedLogs: electronData.feedLogs || [],
-    setFeedLogs: () => {
-      console.warn('Direct setFeedLogs not supported in Electron mode. Use addFeedLog instead.');
-    },
-    loading: electronData.loading || false,
-    error: electronData.error || null,
-    addGoat: electronData.addGoat,
-    updateGoat: electronData.updateGoat,
-    deleteGoat: electronData.deleteGoat,
-    addWeightRecord: electronData.addWeightRecord,
-    updateWeightRecord: electronData.updateWeightRecord,
-    deleteWeightRecord: electronData.deleteWeightRecord,
-    addHealthRecord: electronData.addHealthRecord,
-    updateHealthRecord: electronData.updateHealthRecord,
-    deleteHealthRecord: electronData.deleteHealthRecord,
-    addBreedingRecord: electronData.addBreedingRecord,
-    updateBreedingRecord: electronData.updateBreedingRecord,
-    deleteBreedingRecord: electronData.deleteBreedingRecord,
-    addFinanceRecord: electronData.addFinanceRecord,
-    updateFinanceRecord: electronData.updateFinanceRecord,
-    deleteFinanceRecord: electronData.deleteFinanceRecord,
+    goats: currentData.goats || [],
+    setGoats: currentData.setGoats,
+    weightRecords: currentData.weightRecords || [],
+    setWeightRecords: currentData.setWeightRecords,
+    healthRecords: currentData.healthRecords || [],
+    setHealthRecords: currentData.setHealthRecords,
+    breedingRecords: currentData.breedingRecords || [],
+    setBreedingRecords: currentData.setBreedingRecords,
+    financeRecords: currentData.financeRecords || [],
+    setFinanceRecords: currentData.setFinanceRecords,
+    feeds: currentData.feeds || [],
+    setFeeds: currentData.setFeeds,
+    feedPlans: currentData.feedPlans || [],
+    setFeedPlans: currentData.setFeedPlans,
+    feedLogs: currentData.feedLogs || [],
+    setFeedLogs: currentData.setFeedLogs,
+    loading: currentData.loading || false,
+    error: currentData.error || null,
+    addGoat: currentData.addGoat,
+    updateGoat: currentData.updateGoat,
+    deleteGoat: currentData.deleteGoat,
+    addWeightRecord: currentData.addWeightRecord,
+    updateWeightRecord: currentData.updateWeightRecord,
+    deleteWeightRecord: currentData.deleteWeightRecord,
+    addHealthRecord: currentData.addHealthRecord,
+    updateHealthRecord: currentData.updateHealthRecord,
+    deleteHealthRecord: currentData.deleteHealthRecord,
+    addBreedingRecord: currentData.addBreedingRecord,
+    updateBreedingRecord: currentData.updateBreedingRecord,
+    deleteBreedingRecord: currentData.deleteBreedingRecord,
+    addFinanceRecord: currentData.addFinanceRecord,
+    updateFinanceRecord: currentData.updateFinanceRecord,
+    deleteFinanceRecord: currentData.deleteFinanceRecord,
     getGoatWeightHistory,
     getGoatHealthHistory,
     getUpcomingHealthReminders,
