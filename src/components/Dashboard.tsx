@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import BackendStatus from './BackendStatus';
-import { useGoatDataLocal } from '@/hooks/useLocalStorageOnly';
+import  * as useGoatDataLocal  from '@/hooks/useLocalStorageOnly';
 
 ChartJS.register(
   CategoryScale,
@@ -48,7 +48,7 @@ export default function Dashboard() {
   }, []);
 
   // Replace useGoatData with local version
-  const { goats, weightRecords, healthRecords } = useGoatDataLocal();
+  const { goats, weightRecords, healthRecords } = useGoatDataLocal.useGoatData();
   const isElectronAvailable = Boolean(window.electronAPI?.isElectron);
 
   const totalGoats = goats.length;

@@ -2,11 +2,11 @@
 import React, { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Scale, 
-  Heart, 
+import {
+  LayoutDashboard,
+  Users,
+  Scale,
+  Heart,
   GitBranch,
   DollarSign,
   Wheat,
@@ -76,9 +76,25 @@ export function Layout({ children, activeSection, onSectionChange }: LayoutProps
       <div className="flex">
         {/* Sidebar */}
         <div className="w-64 border-r border-border bg-card">
-          <div className="p-6">
-            <h1 className="text-xl font-bold text-foreground">Goat Tracker</h1>
+          <div className="p-4 flex items-center justify-between border-b border-border">
+            <div className="flex items-center space-x-2">
+              <Users className="h-6 w-6 text-primary" />
+              <h1 className="text-xl font-bold text-foreground">Goat Tracker</h1>
+            </div>
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                onClick={cycleTheme}
+                title={`Current theme: ${theme}`}
+              >
+                <ThemeIcon className="h-4 w-4" />
+                {/* <span className="hidden sm:inline-block">{theme.charAt(0).toUpperCase() + theme.slice(1)}</span> */}
+              </Button>
+            </div>
           </div>
+          {/* </div> */}
           <nav className="space-y-1 px-3">
             {navigationItems.map((item) => {
               const Icon = item.icon;
@@ -98,18 +114,8 @@ export function Layout({ children, activeSection, onSectionChange }: LayoutProps
               );
             })}
           </nav>
-          
-          {/* Theme Toggle in Sidebar */}
-          <div className="absolute bottom-4 left-3 right-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={cycleTheme}
-            >
-              <ThemeIcon className="mr-2 h-4 w-4" />
-              {theme.charAt(0).toUpperCase() + theme.slice(1)} Theme
-            </Button>
-          </div>
+
+
         </div>
 
         {/* Main Content */}

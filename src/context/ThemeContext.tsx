@@ -33,6 +33,20 @@ const accentColorMap: Record<AccentColor, string> = {
   yellow: '48 96% 53%'
 };
 
+const generateColorVariants = (hsl: string) => {
+  const [h, s, lRaw] = hsl.split(' ');
+  const l = parseInt(lRaw);
+  return {
+    default: `${h} ${s} ${l}%`,
+    lighter: `${h} ${s} ${Math.min(l + 10, 95)}%`,
+    darker: `${h} ${s} ${Math.max(l - 10, 0)}%`,
+    hover: `${h} ${s} ${Math.max(l - 5, 0)}%`,
+    ghost: `${h} ${s} ${l}% / 0.1`,
+    ghostHover: `${h} ${s} ${l}% / 0.2`,
+    muted: `${h} calc(${s} * 0.5) ${l}% / 0.5`,
+  };
+};
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
@@ -48,29 +62,38 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return 'sage';
   });
 
-  useEffect(() => {
-    const root = window.document.documentElement;
-    
-    // Apply theme
-    root.classList.remove('light', 'dark');
-    
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
-    }
+useEffect(() => {
+  const root = document.documentElement;
 
-    // Apply accent color
-    root.style.setProperty('--primary', accentColorMap[accentColor]);
-    root.style.setProperty('--primary-glow', accentColorMap[accentColor]);
+  // Theme
+  root.classList.remove("light", "dark");
+  if (theme === "system") {
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+    root.classList.add(systemTheme);
+  } else {
+    root.classList.add(theme);
+  }
 
-    // Store preferences
-    localStorage.setItem('theme', theme);
-    localStorage.setItem('accent-color', accentColor);
-  }, [theme, accentColor]);
+  const colors = generateColorVariants(accentColorMap[accentColor]);
+
+  // Core accent variables
+  root.style.setProperty("--primary", colors.default);
+  root.style.setProperty("--primary-foreground", "0 0% 98%");
+  root.style.setProperty("--primary-hover", colors.hover);
+  root.style.setProperty("--primary-ghost", colors.ghost);
+  root.style.setProperty("--primary-ghost-hover", colors.ghostHover);
+  root.style.setProperty("--primary-muted", colors.muted);
+  root.style.setProperty("--ring", colors.default);
+
+  // Glow effect
+  root.style.setProperty("--primary-glow", `hsl(${colors.default}) 0 0 20px`);
+  root.style.setProperty("--primary-glow-strong", `hsl(${colors.default}) 0 0 30px`);
+
+  localStorage.setItem("theme", theme);
+  localStorage.setItem("accent-color", accentColor);
+}, [theme, accentColor]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, accentColor, setAccentColor }}>

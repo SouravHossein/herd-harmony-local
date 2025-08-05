@@ -6,7 +6,7 @@ const FileService = require('./services/FileService.cjs');
 const NotificationService = require('./services/NotificationService.cjs');
 const BackupService = require('./services/BackupService.cjs');
 
-const isDev = true //!app.isPackaged;
+const isDev = true
 let mainWindow;
 
 // --- Service Instances ---
@@ -52,7 +52,7 @@ function createWindow() {
 
 if (isDev) {
   // ✅ Load Vite Dev Server during development
-  mainWindow.loadURL('http://localhost:5173');
+  mainWindow.loadURL('http://localhost:8080');
   mainWindow.webContents.openDevTools();
 } else {
   // ✅ Load built app in production
