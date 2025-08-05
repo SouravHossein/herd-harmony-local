@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Goat } from '@/types/goat';
 import { PedigreeAI, InbreedingAnalysis } from '@/lib/pedigreeAI';
-import ParentSelector from './ParentSelector';
+import EnhancedParentSelector from './EnhancedParentSelector';
 
 interface PedigreeEditorProps {
   selectedGoat: Goat | null;
@@ -349,13 +349,14 @@ export default function PedigreeEditor({
             </div>
           ) : (
             <div className="space-y-4">
-              <ParentSelector
+              <EnhancedParentSelector
                 goats={goats}
                 selectedFatherId={history.present.fatherId}
                 selectedMotherId={history.present.motherId}
                 onFatherChange={handleFatherChange}
                 onMotherChange={handleMotherChange}
                 excludeGoatId={selectedGoat.id}
+                showManualInput={true}
               />
 
               {history.present.fatherId && history.present.motherId && (

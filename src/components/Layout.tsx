@@ -32,7 +32,6 @@ interface LayoutProps {
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'goats', label: 'Goats', icon: Users },
-  { id: 'weight', label: 'Weight', icon: Scale },
   { id: 'health', label: 'Health', icon: Heart },
   { id: 'breeding', label: 'Breeding', icon: Baby },
   { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
@@ -41,8 +40,6 @@ const navigationItems = [
   { id: 'weather', label: 'Weather', icon: CloudSun },
   { id: 'health-ai', label: 'Health AI', icon: Activity },
   { id: 'growth-optimizer', label: 'Growth', icon: TrendingUp },
-  { id: 'data', label: 'Data', icon: Database },
-  { id: 'backup', label: 'Backup', icon: Shield },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

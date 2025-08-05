@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoatContext } from '@/context/GoatContext';
 import { WeatherWidget } from '@/components/weather/WeatherWidget';
 import { GoatManagement } from '@/components/GoatManagement';
-import { WeightTracking } from '@/components/WeightTracking';
+
 import { HealthDashboard } from '@/components/HealthDashboard';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
@@ -279,7 +279,13 @@ export default function AllInOneDashboard() {
             </TabsContent>
 
             <TabsContent value="weight" className="p-6">
-              <WeightTracking />
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold">Weight Tracking</h3>
+                <p className="text-muted-foreground">Weight tracking functionality integrated into Health dashboard.</p>
+                <Button onClick={() => setActiveWorkspace('health')}>
+                  Go to Health Dashboard
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="feed" className="p-6">

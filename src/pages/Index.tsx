@@ -1,14 +1,10 @@
 
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import Dashboard from '@/components/Dashboard';
 import AllInOneDashboard from '@/components/AllInOneDashboard';
 import { GoatManagement } from '@/components/GoatManagement';
-import { WeightTracking } from '@/components/WeightTracking';
 import { HealthDashboard } from '@/components/HealthDashboard';
 import { PedigreeWrapper } from '@/components/PedigreeWrapper';
-import { DataManagement } from '@/components/DataManagement';
-import { BackupManager } from '@/components/BackupManager';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
 import { HealthAI } from '@/components/HealthAI';
@@ -32,12 +28,8 @@ export default function Index() {
     switch (activeSection) {
       case 'dashboard':
         return <AllInOneDashboard />;
-      case 'classic-dashboard':
-        return <Dashboard />;
       case 'goats':
         return <GoatManagement />;
-      case 'weight':
-        return <WeightTracking />;
       case 'health':
         return <HealthDashboard />;
       case 'breeding':
@@ -54,10 +46,6 @@ export default function Index() {
         return <HealthAI />;
       case 'growth-optimizer':
         return <GrowthOptimizer />;
-      case 'data':
-        return <DataManagement />;
-      case 'backup':
-        return <BackupManager />;
       case 'settings':
         return <Settings />;
       default:
