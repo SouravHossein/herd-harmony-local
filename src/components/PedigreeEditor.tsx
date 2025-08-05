@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useReducer } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,10 @@ import {
   Save, 
   X, 
   Users, 
-  AlertCircle 
+  AlertCircle,
+  Undo,
+  Redo,
+  RotateCcw
 } from 'lucide-react';
 import { Goat } from '@/types/goat';
 import { PedigreeAI, InbreedingAnalysis } from '@/lib/pedigreeAI';
@@ -22,15 +25,114 @@ interface PedigreeEditorProps {
   onUpdateGoat: (id: string, updates: Partial<Goat>) => void;
 }
 
+// Action types for undo/redo functionality
+type PedigreeAction = 
+  | { type: 'SET_FATHER'; fatherId?: string }
+  | { type: 'SET_MOTHER'; motherId?: string }
+  | { type: 'SET_BOTH'; fatherId?: string; motherId?: string }
+  | { type: 'RESET'; fatherId?: string; motherId?: string };
+
+interface PedigreeState {
+  fatherId?: string;
+  motherId?: string;
+}
+
+interface HistoryState {
+  past: PedigreeState[];
+  present: PedigreeState;
+  future: PedigreeState[];
+}
+
+// History reducer for undo/redo
+const historyReducer = (state: HistoryState, action: { type: string; payload?: any }): HistoryState => {
+  const { past, present, future } = state;
+
+  switch (action.type) {
+    case 'UNDO':
+      if (past.length === 0) return state;
+      const previous = past[past.length - 1];
+      const newPast = past.slice(0, past.length - 1);
+      return {
+        past: newPast,
+        present: previous,
+        future: [present, ...future]
+      };
+
+    case 'REDO':
+      if (future.length === 0) return state;
+      const next = future[0];
+      const newFuture = future.slice(1);
+      return {
+        past: [...past, present],
+        present: next,
+        future: newFuture
+      };
+
+    case 'UPDATE':
+      if (action.payload.fatherId === present.fatherId && action.payload.motherId === present.motherId) {
+        return state; // No change
+      }
+      return {
+        past: [...past, present],
+        present: action.payload,
+        future: []
+      };
+
+    case 'RESET':
+      return {
+        past: [],
+        present: action.payload,
+        future: []
+      };
+
+    default:
+      return state;
+  }
+};
+
 export default function PedigreeEditor({ 
   selectedGoat, 
   goats, 
   onUpdateGoat 
 }: PedigreeEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editingFatherId, setEditingFatherId] = useState<string | undefined>();
-  const [editingMotherId, setEditingMotherId] = useState<string | undefined>();
   const [inbreedingAnalysis, setInbreedingAnalysis] = useState<InbreedingAnalysis | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Initialize history state
+  const initialState: HistoryState = {
+    past: [],
+    present: {
+      fatherId: selectedGoat?.fatherId,
+      motherId: selectedGoat?.motherId
+    },
+    future: []
+  };
+
+  const [history, dispatchHistory] = useReducer(historyReducer, initialState);
+
+  React.useEffect(() => {
+    if (selectedGoat) {
+      dispatchHistory({
+        type: 'RESET',
+        payload: {
+          fatherId: selectedGoat.fatherId,
+          motherId: selectedGoat.motherId
+        }
+      });
+      setHasUnsavedChanges(false);
+    }
+  }, [selectedGoat]);
+
+  React.useEffect(() => {
+    // Check for unsaved changes
+    if (selectedGoat) {
+      const hasChanges = 
+        history.present.fatherId !== selectedGoat.fatherId ||
+        history.present.motherId !== selectedGoat.motherId;
+      setHasUnsavedChanges(hasChanges);
+    }
+  }, [history.present, selectedGoat]);
 
   if (!selectedGoat) {
     return (
@@ -43,28 +145,33 @@ export default function PedigreeEditor({
     );
   }
 
-  const father = selectedGoat.fatherId ? goats.find(g => g.id === selectedGoat.fatherId) : null;
-  const mother = selectedGoat.motherId ? goats.find(g => g.id === selectedGoat.motherId) : null;
+  const father = history.present.fatherId ? goats.find(g => g.id === history.present.fatherId) : null;
+  const mother = history.present.motherId ? goats.find(g => g.id === history.present.motherId) : null;
 
   const handleEdit = () => {
     setIsEditing(true);
-    setEditingFatherId(selectedGoat.fatherId);
-    setEditingMotherId(selectedGoat.motherId);
     setInbreedingAnalysis(null);
   };
 
   const handleCancel = () => {
+    // Reset to original values
+    dispatchHistory({
+      type: 'RESET',
+      payload: {
+        fatherId: selectedGoat.fatherId,
+        motherId: selectedGoat.motherId
+      }
+    });
     setIsEditing(false);
-    setEditingFatherId(undefined);
-    setEditingMotherId(undefined);
     setInbreedingAnalysis(null);
+    setHasUnsavedChanges(false);
   };
 
   const handleSave = () => {
     const validation = PedigreeAI.validateParentage(
       selectedGoat,
-      editingFatherId,
-      editingMotherId,
+      history.present.fatherId,
+      history.present.motherId,
       goats
     );
 
@@ -74,21 +181,48 @@ export default function PedigreeEditor({
     }
 
     onUpdateGoat(selectedGoat.id, {
-      fatherId: editingFatherId,
-      motherId: editingMotherId
+      fatherId: history.present.fatherId,
+      motherId: history.present.motherId
     });
 
     setIsEditing(false);
-    setEditingFatherId(undefined);
-    setEditingMotherId(undefined);
     setInbreedingAnalysis(null);
+    setHasUnsavedChanges(false);
+  };
+
+  const handleFatherChange = (fatherId?: string) => {
+    dispatchHistory({
+      type: 'UPDATE',
+      payload: {
+        fatherId,
+        motherId: history.present.motherId
+      }
+    });
+  };
+
+  const handleMotherChange = (motherId?: string) => {
+    dispatchHistory({
+      type: 'UPDATE',
+      payload: {
+        fatherId: history.present.fatherId,
+        motherId
+      }
+    });
+  };
+
+  const handleUndo = () => {
+    dispatchHistory({ type: 'UNDO' });
+  };
+
+  const handleRedo = () => {
+    dispatchHistory({ type: 'REDO' });
   };
 
   const checkInbreeding = () => {
-    if (editingFatherId && editingMotherId) {
+    if (history.present.fatherId && history.present.motherId) {
       const analysis = PedigreeAI.calculateInbreedingCoefficient(
-        editingFatherId,
-        editingMotherId,
+        history.present.fatherId,
+        history.present.motherId,
         goats
       );
       setInbreedingAnalysis(analysis);
@@ -111,7 +245,14 @@ export default function PedigreeEditor({
     <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-lg">Pedigree Information</CardTitle>
+          <CardTitle className="text-lg flex items-center space-x-2">
+            <span>Pedigree Information</span>
+            {hasUnsavedChanges && (
+              <Badge variant="outline" className="text-orange-600">
+                Unsaved Changes
+              </Badge>
+            )}
+          </CardTitle>
           <div className="flex gap-2">
             {!isEditing ? (
               <Button size="sm" onClick={handleEdit}>
@@ -120,11 +261,50 @@ export default function PedigreeEditor({
               </Button>
             ) : (
               <>
+                {/* Undo/Redo Controls */}
+                <div className="flex gap-1 mr-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleUndo}
+                    disabled={history.past.length === 0}
+                    title="Undo"
+                  >
+                    <Undo className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleRedo}
+                    disabled={history.future.length === 0}
+                    title="Redo"
+                  >
+                    <Redo className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      dispatchHistory({
+                        type: 'RESET',
+                        payload: {
+                          fatherId: selectedGoat.fatherId,
+                          motherId: selectedGoat.motherId
+                        }
+                      });
+                    }}
+                    disabled={!hasUnsavedChanges}
+                    title="Reset to original"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </div>
+
                 <Button size="sm" variant="outline" onClick={handleCancel}>
                   <X className="w-4 h-4 mr-2" />
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleSave}>
+                <Button size="sm" onClick={handleSave} disabled={!hasUnsavedChanges}>
                   <Save className="w-4 h-4 mr-2" />
                   Save
                 </Button>
@@ -171,14 +351,14 @@ export default function PedigreeEditor({
             <div className="space-y-4">
               <ParentSelector
                 goats={goats}
-                selectedFatherId={editingFatherId}
-                selectedMotherId={editingMotherId}
-                onFatherChange={setEditingFatherId}
-                onMotherChange={setEditingMotherId}
+                selectedFatherId={history.present.fatherId}
+                selectedMotherId={history.present.motherId}
+                onFatherChange={handleFatherChange}
+                onMotherChange={handleMotherChange}
                 excludeGoatId={selectedGoat.id}
               />
 
-              {editingFatherId && editingMotherId && (
+              {history.present.fatherId && history.present.motherId && (
                 <div className="flex justify-center">
                   <Button 
                     size="sm" 
@@ -195,6 +375,18 @@ export default function PedigreeEditor({
           )}
         </CardContent>
       </Card>
+
+      {/* History Debug Info (can be removed in production) */}
+      {isEditing && (
+        <Card className="border-dashed border-muted">
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">
+              History: {history.past.length} past, {history.future.length} future
+              {hasUnsavedChanges && " • Unsaved changes detected"}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {inbreedingAnalysis && (
         <Card>

@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGoatContext } from '@/context/GoatContext';
 import { Goat } from '@/types/goat';
-import ImageUploader from './ImageUploader';
+import { MediaFile } from '@/types/media';
+import MediaGallery from './media/MediaGallery';
 import EnhancedParentSelector from './EnhancedParentSelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PedigreeAI } from '@/lib/pedigreeAI';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info, Camera } from 'lucide-react';
 
 interface GoatFormProps {
   goat?: Goat;
@@ -36,7 +37,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
     notes: '',
     fatherId: undefined as string | undefined,
     motherId: undefined as string | undefined,
-    imageId: undefined as string | undefined,
+    mediaFiles: [] as MediaFile[],
   });
 
   const [pedigreeValidation, setPedigreeValidation] = useState<{
@@ -59,7 +60,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
         notes: goat.notes || '',
         fatherId: goat.fatherId,
         motherId: goat.motherId,
-        imageId: goat.imageId,
+        mediaFiles: goat.mediaFiles || [],
       });
     } else {
       setFormData({
@@ -74,7 +75,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
         notes: '',
         fatherId: undefined,
         motherId: undefined,
-        imageId: undefined,
+        mediaFiles: [],
       });
     }
   }, [goat]);
@@ -115,126 +116,142 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
     'Toggenburg', 'Nigerian Dwarf', 'Boer', 'Angus', 'Kiko', 'Other'
   ];
 
+  const mediaConfig = {
+    allowMultiple: true,
+    acceptedTypes: ['image/*', 'video/*'],
+    maxFileSize: 50 * 1024 * 1024, // 50MB
+    maxFiles: 15,
+    autoTimestamp: true,
+    defaultCategory: 'general' as const
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{goat ? 'Edit Goat' : 'Add New Goat'}</DialogTitle>
+          <DialogTitle className="flex items-center space-x-2">
+            <Camera className="w-5 h-5" />
+            <span>{goat ? 'Edit Goat' : 'Add New Goat'}</span>
+          </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="tagNumber">Tag Number *</Label>
-              <Input
-                id="tagNumber"
-                value={formData.tagNumber}
-                onChange={(e) => setFormData({ ...formData, tagNumber: e.target.value })}
-                required
-              />
-            </div>
-          </div>
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="tagNumber">Tag Number *</Label>
+                  <Input
+                    id="tagNumber"
+                    value={formData.tagNumber}
+                    onChange={(e) => setFormData({ ...formData, tagNumber: e.target.value })}
+                    required
+                  />
+                </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="breed">Breed *</Label>
-              <Select value={formData.breed} onValueChange={(value) => setFormData({ ...formData, breed: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select breed" />
-                </SelectTrigger>
-                <SelectContent>
-                  {breeds.map((breed) => (
-                    <SelectItem key={breed} value={breed}>
-                      {breed}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender *</Label>
-              <Select value={formData.gender} onValueChange={(value: 'male' | 'female') => setFormData({ ...formData, gender: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="breed">Breed *</Label>
+                  <Select value={formData.breed} onValueChange={(value) => setFormData({ ...formData, breed: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select breed" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {breeds.map((breed) => (
+                        <SelectItem key={breed} value={breed}>
+                          {breed}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender *</Label>
+                  <Select value={formData.gender} onValueChange={(value: 'male' | 'female') => setFormData({ ...formData, gender: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="color">Color</Label>
-              <Input
-                id="color"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                placeholder="e.g., Brown, White, Mixed"
-              />
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="color">Color</Label>
+                  <Input
+                    id="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    placeholder="e.g., Brown, White, Mixed"
+                  />
+                </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value: 'active' | 'sold' | 'deceased') => setFormData({ ...formData, status: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="sold">Sold</SelectItem>
-                  <SelectItem value="deceased">Deceased</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="hornStatus">Horn Status</Label>
-              <Select value={formData.hornStatus} onValueChange={(value: 'horned' | 'polled' | 'disbudded') => setFormData({ ...formData, hornStatus: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="horned">Horned</SelectItem>
-                  <SelectItem value="polled">Polled</SelectItem>
-                  <SelectItem value="disbudded">Disbudded</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={formData.status} onValueChange={(value: 'active' | 'sold' | 'deceased') => setFormData({ ...formData, status: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="sold">Sold</SelectItem>
+                      <SelectItem value="deceased">Deceased</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="hornStatus">Horn Status</Label>
+                  <Select value={formData.hornStatus} onValueChange={(value: 'horned' | 'polled' | 'disbudded') => setFormData({ ...formData, hornStatus: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="horned">Horned</SelectItem>
+                      <SelectItem value="polled">Polled</SelectItem>
+                      <SelectItem value="disbudded">Disbudded</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <ImageUploader
-            currentImageId={formData.imageId}
-            onImageChange={(imageId) => setFormData({ ...formData, imageId })}
-            label="Goat Photo"
+          {/* Media Gallery */}
+          <MediaGallery
+            mediaFiles={formData.mediaFiles}
+            onMediaChange={(files) => setFormData({ ...formData, mediaFiles: files })}
+            config={mediaConfig}
           />
 
+          {/* Parentage Information */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Parentage Information</CardTitle>
@@ -268,6 +285,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
             </CardContent>
           </Card>
 
+          {/* Notes */}
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea

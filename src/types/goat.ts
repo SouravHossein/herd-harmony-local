@@ -1,3 +1,6 @@
+
+import { MediaFile } from './media';
+
 export interface Goat {
   id: string;
   name: string;
@@ -10,8 +13,9 @@ export interface Goat {
   hornStatus: 'horned' | 'polled' | 'disbudded';
   fatherId?: string;
   motherId?: string;
-  photoPath?: string;
-  imageId?: string; // New field for image storage
+  photoPath?: string; // Legacy field - keep for backward compatibility
+  imageId?: string; // Legacy field - keep for backward compatibility
+  mediaFiles: MediaFile[]; // New enhanced media system
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
