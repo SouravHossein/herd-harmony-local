@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoatContext } from '@/context/GoatContext';
 import { WeatherWidget } from '@/components/weather/WeatherWidget';
-import { GoatManagement } from '@/components/GoatManagement';
+import  GoatManagement  from '@/components/GoatManagement';
 
 import { HealthDashboard } from '@/components/HealthDashboard';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import AllInOneDashboard from '@/components/AllInOneDashboard';
-import { GoatManagement } from '@/components/GoatManagement';
+import  GoatManagement  from '@/components/GoatManagement';
 import { HealthDashboard } from '@/components/HealthDashboard';
 import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
