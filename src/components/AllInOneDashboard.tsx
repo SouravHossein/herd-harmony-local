@@ -1,23 +1,27 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoatContext } from '@/context/GoatContext';
 import { WeatherWidget } from '@/components/weather/WeatherWidget';
-import  GoatManagement  from '@/components/GoatManagement';
-
+import GoatManagement from '@/components/GoatManagement';
 import { HealthDashboard } from '@/components/HealthDashboard';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
+import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
+import { GettingStartedChecklist } from '@/components/onboarding/GettingStartedChecklist';
 import {
   Users, Heart, TrendingUp, DollarSign, Bell, Activity,
-  Plus, Calendar, BarChart3, Settings, AlertTriangle
+  Plus, Calendar, BarChart3, Settings, AlertTriangle, Sparkles
 } from 'lucide-react';
 
 export default function AllInOneDashboard() {
   const [activeWorkspace, setActiveWorkspace] = useState('overview');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(true);
+  
   const {
     goats,
     weightRecords,
@@ -28,6 +32,36 @@ export default function AllInOneDashboard() {
     loading,
     error
   } = useGoatContext();
+
+  // Check if user is new (no goats added yet)
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('herd-harmony-onboarding-completed');
+    if (!hasSeenOnboarding && goats.length === 0) {
+      setShowOnboarding(true);
+    }
+  }, [goats.length]);
+
+  const handleCompleteOnboarding = () => {
+    localStorage.setItem('herd-harmony-onboarding-completed', 'true');
+    setShowOnboarding(false);
+    setShowChecklist(true);
+  };
+
+  const handleSkipOnboarding = () => {
+    localStorage.setItem('herd-harmony-onboarding-completed', 'true');
+    setShowOnboarding(false);
+    setShowChecklist(true);
+  };
+
+  // Show onboarding wizard if needed
+  if (showOnboarding) {
+    return (
+      <OnboardingWizard
+        onComplete={handleCompleteOnboarding}
+        onSkip={handleSkipOnboarding}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -79,7 +113,7 @@ export default function AllInOneDashboard() {
 
   const quickActions = [
     { label: 'Add Goat', icon: Plus, action: () => setActiveWorkspace('goats'), color: 'bg-blue-500' },
-    { label: 'Record Weight', icon: TrendingUp, action: () => setActiveWorkspace('weight'), color: 'bg-green-500' },
+    { label: 'Record Weight', icon: TrendingUp, action: () => setActiveWorkspace('health'), color: 'bg-green-500' },
     { label: 'Health Check', icon: Heart, action: () => setActiveWorkspace('health'), color: 'bg-red-500' },
     { label: 'Feed Management', icon: Activity, action: () => setActiveWorkspace('feed'), color: 'bg-yellow-500' }
   ];
@@ -89,9 +123,12 @@ export default function AllInOneDashboard() {
       {/* Header with Environment Indicator */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Farm Workspace</h1>
+          <h1 className="text-3xl font-bold text-foreground flex items-center space-x-2">
+            <Sparkles className="w-8 h-8 text-primary" />
+            <span>Herd Harmony</span>
+          </h1>
           <div className="flex items-center space-x-4 mt-2">
-            <p className="text-muted-foreground">All-in-one farm management dashboard</p>
+            <p className="text-muted-foreground">Intelligent farm management workspace</p>
             <Badge variant={window.electronAPI?.isElectron ? "default" : "secondary"}>
               {window.electronAPI?.isElectron ? "Desktop Mode" : "Browser Mode"}
             </Badge>
@@ -109,6 +146,14 @@ export default function AllInOneDashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Getting Started Checklist */}
+      {showChecklist && (
+        <GettingStartedChecklist
+          onClose={() => setShowChecklist(false)}
+          onNavigate={setActiveWorkspace}
+        />
+      )}
 
       {/* Quick Stats Grid */}
       <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -136,7 +181,7 @@ export default function AllInOneDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveWorkspace('weight')}>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveWorkspace('health')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Weight</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
