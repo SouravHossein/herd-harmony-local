@@ -12,6 +12,11 @@ import { FeedDashboard } from '@/components/feed/FeedDashboard';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { GettingStartedChecklist } from '@/components/onboarding/GettingStartedChecklist';
+import { SmartNotifications } from '@/components/notifications/SmartNotifications';
+import { FarmHealthScore } from '@/components/notifications/FarmHealthScore';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { useAlerts } from '@/hooks/useAlerts';
+import { useNavigate } from 'react-router-dom';
 import {
   Users, Heart, TrendingUp, DollarSign, Bell, Activity,
   Plus, Calendar, BarChart3, Settings, AlertTriangle, Sparkles
@@ -33,6 +38,8 @@ export default function AllInOneDashboard() {
     error
   } = useGoatContext();
 
+  const { alerts, healthMetrics, dismissAlert, clearDismissedAlerts, getCriticalAlerts } = useAlerts();
+
   // Check if user is new (no goats added yet)
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('herd-harmony-onboarding-completed');
@@ -51,6 +58,36 @@ export default function AllInOneDashboard() {
     localStorage.setItem('herd-harmony-onboarding-completed', 'true');
     setShowOnboarding(false);
     setShowChecklist(true);
+  };
+
+  const handleAlertAction = (alert: any) => {
+    // Navigate to the appropriate section based on alert
+    if (alert.actionUrl) {
+      const sectionMap: Record<string, string> = {
+        '/health': 'health',
+        '/weight': 'health',
+        '/breeding': 'breeding',
+        '/finance': 'finance',
+        '/feed': 'feed'
+      };
+      const section = sectionMap[alert.actionUrl];
+      if (section) {
+        setActiveWorkspace(section);
+      }
+    }
+  };
+
+  const handleHealthScoreImprove = (category: string) => {
+    const sectionMap: Record<string, string> = {
+      'health': 'health',
+      'weight': 'health',
+      'breeding': 'breeding',
+      'finance': 'finance'
+    };
+    const section = sectionMap[category];
+    if (section) {
+      setActiveWorkspace(section);
+    }
   };
 
   // Show onboarding wizard if needed
@@ -111,6 +148,9 @@ export default function AllInOneDashboard() {
     )
   };
 
+  const activeAlerts = alerts.filter(a => !a.dismissed);
+  const criticalAlerts = getCriticalAlerts();
+
   const quickActions = [
     { label: 'Add Goat', icon: Plus, action: () => setActiveWorkspace('goats'), color: 'bg-blue-500' },
     { label: 'Record Weight', icon: TrendingUp, action: () => setActiveWorkspace('health'), color: 'bg-green-500' },
@@ -132,10 +172,29 @@ export default function AllInOneDashboard() {
             <Badge variant={window.electronAPI?.isElectron ? "default" : "secondary"}>
               {window.electronAPI?.isElectron ? "Desktop Mode" : "Browser Mode"}
             </Badge>
+            {criticalAlerts.length > 0 && (
+              <Badge variant="destructive" className="animate-pulse">
+                {criticalAlerts.length} Critical Alert{criticalAlerts.length > 1 ? 's' : ''}
+              </Badge>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-4">
           <WeatherWidget />
+          {activeAlerts.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setActiveWorkspace('notifications')}
+              className="relative"
+            >
+              <Bell className="mr-2 h-4 w-4" />
+              Notifications
+              <Badge variant="destructive" className="ml-2">
+                {activeAlerts.length}
+              </Badge>
+            </Button>
+          )}
           <Button 
             variant="outline" 
             size="sm"
@@ -153,6 +212,32 @@ export default function AllInOneDashboard() {
           onClose={() => setShowChecklist(false)}
           onNavigate={setActiveWorkspace}
         />
+      )}
+
+      {/* Critical Alerts Banner */}
+      {criticalAlerts.length > 0 && (
+        <Card className="border-destructive bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+                <div>
+                  <h3 className="font-semibold text-destructive">Critical Alerts Require Attention</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {criticalAlerts.length} critical task{criticalAlerts.length > 1 ? 's' : ''} need immediate attention
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="destructive"
+                size="sm"
+                onClick={() => setActiveWorkspace('notifications')}
+              >
+                View All Alerts
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Quick Stats Grid */}
@@ -183,12 +268,16 @@ export default function AllInOneDashboard() {
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setActiveWorkspace('health')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Weight</CardTitle>
+            <CardTitle className="text-sm font-medium">Farm Health Score</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.averageWeight} kg</div>
-            <p className="text-xs text-muted-foreground">Across {weightRecords.length} records</p>
+            <div className={`text-2xl font-bold ${healthMetrics.score >= 80 ? 'text-green-600' : healthMetrics.score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {healthMetrics.score}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {healthMetrics.score >= 80 ? 'Excellent' : healthMetrics.score >= 60 ? 'Good' : 'Needs Attention'}
+            </p>
           </CardContent>
         </Card>
 
@@ -236,18 +325,58 @@ export default function AllInOneDashboard() {
         <CardContent className="p-0">
           <Tabs value={activeWorkspace} onValueChange={setActiveWorkspace} className="w-full">
             <div className="border-b px-4">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="goats">Goats</TabsTrigger>
                 <TabsTrigger value="health">Health</TabsTrigger>
-                <TabsTrigger value="weight">Weight</TabsTrigger>
                 <TabsTrigger value="feed">Feed</TabsTrigger>
                 <TabsTrigger value="finance">Finance</TabsTrigger>
+                <TabsTrigger value="notifications" className="relative">
+                  Alerts
+                  {activeAlerts.length > 0 && (
+                    <Badge variant="destructive" className="ml-1 text-xs">
+                      {activeAlerts.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="overview" className="p-6 space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Farm Health Score */}
+                <FarmHealthScore 
+                  metrics={healthMetrics}
+                  onImprove={handleHealthScoreImprove}
+                />
+
+                {/* Smart Notifications */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Smart Alerts</span>
+                      {activeAlerts.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setActiveWorkspace('notifications')}
+                        >
+                          View All
+                        </Button>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SmartNotifications
+                      alerts={activeAlerts}
+                      onDismiss={dismissAlert}
+                      onAction={handleAlertAction}
+                      maxDisplay={3}
+                    />
+                  </CardContent>
+                </Card>
+
                 {/* Recent Activity */}
                 <Card>
                   <CardHeader>
@@ -323,22 +452,28 @@ export default function AllInOneDashboard() {
               <HealthDashboard />
             </TabsContent>
 
-            <TabsContent value="weight" className="p-6">
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Weight Tracking</h3>
-                <p className="text-muted-foreground">Weight tracking functionality integrated into Health dashboard.</p>
-                <Button onClick={() => setActiveWorkspace('health')}>
-                  Go to Health Dashboard
-                </Button>
-              </div>
-            </TabsContent>
-
             <TabsContent value="feed" className="p-6">
               <FeedDashboard />
             </TabsContent>
 
             <TabsContent value="finance" className="p-6">
               <FinanceDashboard />
+            </TabsContent>
+
+            <TabsContent value="notifications" className="p-6">
+              <NotificationCenter
+                alerts={alerts}
+                onDismiss={dismissAlert}
+                onAction={handleAlertAction}
+                onClearDismissed={clearDismissedAlerts}
+              />
+            </TabsContent>
+
+            <TabsContent value="settings" className="p-6">
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold">Settings</h3>
+                <p className="text-muted-foreground">Settings functionality will be implemented here.</p>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
