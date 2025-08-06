@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,10 @@ import { GettingStartedChecklist } from '@/components/onboarding/GettingStartedC
 import { SmartNotifications } from '@/components/notifications/SmartNotifications';
 import { FarmHealthScore } from '@/components/notifications/FarmHealthScore';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { ActionableAlerts } from '@/components/dashboard/ActionableAlerts';
+import { QuickActionCenter } from '@/components/dashboard/QuickActionCenter';
+import { UsageStreaks } from '@/components/dashboard/UsageStreaks';
+import { SmartSuggestions } from '@/components/dashboard/SmartSuggestions';
 import { useAlerts } from '@/hooks/useAlerts';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -90,6 +93,52 @@ export default function AllInOneDashboard() {
     }
   };
 
+  const handleQuickAction = (actionId: string) => {
+    switch (actionId) {
+      case 'add-goat':
+        setActiveWorkspace('goats');
+        break;
+      case 'record-weight':
+        setActiveWorkspace('health');
+        break;
+      case 'log-health':
+        setActiveWorkspace('health');
+        break;
+      case 'add-expense':
+        setActiveWorkspace('finance');
+        break;
+      case 'generate-report':
+        // TODO: Implement report generation
+        console.log('Generate report action');
+        break;
+      case 'feed-management':
+        setActiveWorkspace('feed');
+        break;
+    }
+  };
+
+  const handleSuggestionClick = (action: string) => {
+    switch (action) {
+      case 'generate-health-report':
+        setActiveWorkspace('health');
+        break;
+      case 'record-weights':
+        setActiveWorkspace('health');
+        break;
+      case 'review-breeding':
+        setActiveWorkspace('breeding');
+        break;
+      case 'backup-data':
+        setActiveWorkspace('settings');
+        break;
+      case 'complete-profiles':
+        setActiveWorkspace('goats');
+        break;
+      default:
+        console.log('Suggestion action:', action);
+    }
+  };
+
   // Show onboarding wizard if needed
   if (showOnboarding) {
     return (
@@ -150,13 +199,6 @@ export default function AllInOneDashboard() {
 
   const activeAlerts = alerts.filter(a => !a.dismissed);
   const criticalAlerts = getCriticalAlerts();
-
-  const quickActions = [
-    { label: 'Add Goat', icon: Plus, action: () => setActiveWorkspace('goats'), color: 'bg-blue-500' },
-    { label: 'Record Weight', icon: TrendingUp, action: () => setActiveWorkspace('health'), color: 'bg-green-500' },
-    { label: 'Health Check', icon: Heart, action: () => setActiveWorkspace('health'), color: 'bg-red-500' },
-    { label: 'Feed Management', icon: Activity, action: () => setActiveWorkspace('feed'), color: 'bg-yellow-500' }
-  ];
 
   return (
     <div className="space-y-6">
@@ -295,31 +337,6 @@ export default function AllInOneDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Activity className="w-5 h-5" />
-            <span>Quick Actions</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                className="h-20 flex-col space-y-2"
-                onClick={action.action}
-              >
-                <action.icon className="w-6 h-6" />
-                <span className="text-sm">{action.label}</span>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Main Workspace Tabs */}
       <Card className="min-h-[600px]">
         <CardContent className="p-0">
@@ -344,39 +361,39 @@ export default function AllInOneDashboard() {
             </div>
 
             <TabsContent value="overview" className="p-6 space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Farm Health Score */}
-                <FarmHealthScore 
-                  metrics={healthMetrics}
-                  onImprove={handleHealthScoreImprove}
-                />
+              {/* Enhanced Overview Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Column - Farm Health & Engagement */}
+                <div className="lg:col-span-3 space-y-6">
+                  <FarmHealthScore 
+                    metrics={healthMetrics}
+                    onImprove={handleHealthScoreImprove}
+                  />
+                  <UsageStreaks />
+                </div>
 
-                {/* Smart Notifications */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>Smart Alerts</span>
-                      {activeAlerts.length > 0 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setActiveWorkspace('notifications')}
-                        >
-                          View All
-                        </Button>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <SmartNotifications
-                      alerts={activeAlerts}
-                      onDismiss={dismissAlert}
-                      onAction={handleAlertAction}
-                      maxDisplay={3}
-                    />
-                  </CardContent>
-                </Card>
+                {/* Center Column - Priority Actions */}
+                <div className="lg:col-span-6 space-y-6">
+                  <ActionableAlerts
+                    alerts={activeAlerts}
+                    onActionClick={handleAlertAction}
+                    maxDisplay={6}
+                  />
+                </div>
 
+                {/* Right Column - Quick Actions & Suggestions */}
+                <div className="lg:col-span-3 space-y-6">
+                  <QuickActionCenter onAction={handleQuickAction} />
+                  <SmartSuggestions
+                    alerts={activeAlerts}
+                    onSuggestionClick={handleSuggestionClick}
+                    maxDisplay={3}
+                  />
+                </div>
+              </div>
+
+              {/* Farm Summary Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Recent Activity */}
                 <Card>
                   <CardHeader>
