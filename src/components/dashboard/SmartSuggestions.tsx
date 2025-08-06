@@ -5,14 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Lightbulb, ArrowRight, Camera, FileText, Heart, TrendingUp } from 'lucide-react';
 import { Alert as AlertType } from '@/lib/alertsEngine';
+import { DataIssue } from '@/lib/dataCompletionEngine';
 
 interface SmartSuggestionsProps {
   alerts: AlertType[];
+  dataIssues?: DataIssue[];
   onSuggestionClick: (action: string) => void;
   maxDisplay?: number;
 }
 
-export function SmartSuggestions({ alerts, onSuggestionClick, maxDisplay = 4 }: SmartSuggestionsProps) {
+export function SmartSuggestions({ alerts, dataIssues = [], onSuggestionClick, maxDisplay = 4 }: SmartSuggestionsProps) {
   const generateSuggestions = () => {
     const suggestions = [];
     
@@ -72,16 +74,47 @@ export function SmartSuggestions({ alerts, onSuggestionClick, maxDisplay = 4 }: 
       });
     }
 
-    // Add image completion suggestion
-    suggestions.push({
-      id: 'complete-profiles',
-      title: 'Complete Goat Profiles',
-      description: 'Add photos and complete missing information for better record keeping.',
-      action: 'complete-profiles',
-      icon: Camera,
-      priority: 'low',
-      category: 'Data'
-    });
+    // Add data quality suggestions from DataCompletionEngine
+    const criticalDataIssues = dataIssues.filter(issue => issue.type === 'critical');
+    const warningDataIssues = dataIssues.filter(issue => issue.type === 'warning');
+
+    if (criticalDataIssues.length > 0) {
+      suggestions.push({
+        id: 'fix-critical-data',
+        title: 'Fix Critical Data Issues',
+        description: `${criticalDataIssues.length} critical data problems need immediate attention.`,
+        action: 'fix-critical-data',
+        icon: FileText,
+        priority: 'high',
+        category: 'Data Quality'
+      });
+    }
+
+    if (warningDataIssues.length > 0) {
+      suggestions.push({
+        id: 'improve-data-quality',
+        title: 'Improve Data Quality',
+        description: `${warningDataIssues.length} data improvements recommended for better farm management.`,
+        action: 'improve-data-quality',
+        icon: TrendingUp,
+        priority: 'medium',
+        category: 'Data Quality'
+      });
+    }
+
+    // Add specific suggestions based on data issues
+    const missingPhotos = dataIssues.filter(issue => issue.title.includes('Photo'));
+    if (missingPhotos.length > 0) {
+      suggestions.push({
+        id: 'add-photos',
+        title: 'Add Missing Photos',
+        description: `${missingPhotos.length} goats need profile photos for better identification.`,
+        action: 'add-photos',
+        icon: Camera,
+        priority: 'low',
+        category: 'Media'
+      });
+    }
 
     return suggestions.slice(0, maxDisplay);
   };

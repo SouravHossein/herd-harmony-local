@@ -18,6 +18,9 @@ import { ActionableAlerts } from '@/components/dashboard/ActionableAlerts';
 import { QuickActionCenter } from '@/components/dashboard/QuickActionCenter';
 import { UsageStreaks } from '@/components/dashboard/UsageStreaks';
 import { SmartSuggestions } from '@/components/dashboard/SmartSuggestions';
+import { DataQualityIndicators } from '@/components/notifications/DataQualityIndicators';
+import { BestPracticesWidget } from '@/components/dashboard/BestPracticesWidget';
+import { DataCompletionEngine } from '@/lib/dataCompletionEngine';
 import { useAlerts } from '@/hooks/useAlerts';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -42,6 +45,18 @@ export default function AllInOneDashboard() {
   } = useGoatContext();
 
   const { alerts, healthMetrics, dismissAlert, clearDismissedAlerts, getCriticalAlerts } = useAlerts();
+  
+  // Analyze data quality
+  const dataAnalysis = React.useMemo(() => {
+    return DataCompletionEngine.analyzeDataQuality(
+      goats,
+      healthRecords,
+      weightRecords,
+      breedingRecords,
+      financeRecords,
+      []
+    );
+  }, [goats, healthRecords, weightRecords, breedingRecords, financeRecords]);
 
   // Check if user is new (no goats added yet)
   useEffect(() => {
@@ -386,8 +401,18 @@ export default function AllInOneDashboard() {
                   <QuickActionCenter onAction={handleQuickAction} />
                   <SmartSuggestions
                     alerts={activeAlerts}
+                    dataIssues={dataAnalysis.issues}
                     onSuggestionClick={handleSuggestionClick}
                     maxDisplay={3}
+                  />
+                  <DataQualityIndicators 
+                    metrics={dataAnalysis.metrics}
+                  />
+                  <BestPracticesWidget 
+                    issues={dataAnalysis.issues}
+                    metrics={dataAnalysis.metrics}
+                    onPracticeClick={(practice) => console.log('Practice clicked:', practice)}
+                    maxDisplay={2}
                   />
                 </div>
               </div>

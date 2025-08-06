@@ -13,18 +13,19 @@ import { Heart, User, Camera } from 'lucide-react';
 interface FirstGoatStepProps {
   onNext: () => void;
   onBack: () => void;
+  onData: (stepData: any) => void;
 }
 
-export function FirstGoatStep({ onNext, onBack }: FirstGoatStepProps) {
+export function FirstGoatStep({ onNext, onBack, onData }: FirstGoatStepProps) {
   const [goatData, setGoatData] = useState({
     name: '',
     breed: '',
     gender: '',
     dateOfBirth: '',
     description: '',
-    damId: '',
-    sireId: '',
-    image: null as File | null
+    imageId: undefined as string | undefined,
+    motherId: undefined as string | undefined,
+    fatherId: undefined as string | undefined
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -179,18 +180,19 @@ export function FirstGoatStep({ onNext, onBack }: FirstGoatStepProps) {
           <div>
             <Label>Goat Photo</Label>
             <ImageUploader
-              onImageUpload={handleImageUpload}
-              currentImage={goatData.image}
+              currentImageId={goatData.imageId}
+              onImageChange={(imageId) => setGoatData(prev => ({ ...prev, imageId }))}
             />
           </div>
 
           <div>
             <Label>Parents</Label>
             <EnhancedParentSelector
-              selectedDam={goatData.damId}
-              selectedSire={goatData.sireId}
-              onDamSelect={(id) => handleParentSelect('dam', id)}
-              onSireSelect={(id) => handleParentSelect('sire', id)}
+              goats={[]} // We'll pass real goats from context later
+              selectedMotherId={goatData.motherId}
+              selectedFatherId={goatData.fatherId}
+              onMotherChange={(id) => setGoatData(prev => ({ ...prev, motherId: id }))}
+              onFatherChange={(id) => setGoatData(prev => ({ ...prev, fatherId: id }))}
             />
           </div>
         </CardContent>
