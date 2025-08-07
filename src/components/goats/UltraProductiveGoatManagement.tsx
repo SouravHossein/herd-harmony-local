@@ -20,7 +20,7 @@ import { useGoatContext } from '@/context/GoatContext';
 import { Goat } from '@/types/goat';
 import GoatCard from './GoatCard';
 import GoatProfile from './GoatProfile';
-import GoatForm from './GoatForm';
+import GoatForm from '../GoatForm';
 import { toast } from '@/components/ui/use-toast';
 
 export default function UltraProductiveGoatManagement() {
@@ -113,7 +113,6 @@ export default function UltraProductiveGoatManagement() {
   };
 
   const handleQuickWeight = (goat: Goat) => {
-    // TODO: Implement quick weight modal
     toast({
       title: "Quick Weight",
       description: `Opening weight form for ${goat.name}`,
@@ -121,7 +120,6 @@ export default function UltraProductiveGoatManagement() {
   };
 
   const handleQuickHealth = (goat: Goat) => {
-    // TODO: Implement quick health modal
     toast({
       title: "Quick Health",
       description: `Opening health form for ${goat.name}`,
@@ -214,8 +212,8 @@ export default function UltraProductiveGoatManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center space-x-2 mb-1">
-              <Activity className="h-5 w-5 text-green-600" />
-              <span className="text-2xl font-bold text-green-600">{activeGoats.length}</span>
+              <Activity className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold text-primary">{activeGoats.length}</span>
             </div>
             <p className="text-sm text-muted-foreground">Active Goats</p>
           </CardContent>
@@ -223,8 +221,8 @@ export default function UltraProductiveGoatManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center space-x-2 mb-1">
-              <Star className="h-5 w-5 text-yellow-600" />
-              <span className="text-2xl font-bold text-yellow-600">{favoriteGoats.length}</span>
+              <Star className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold text-primary">{favoriteGoats.length}</span>
             </div>
             <p className="text-sm text-muted-foreground">Favorites</p>
           </CardContent>
@@ -232,8 +230,8 @@ export default function UltraProductiveGoatManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center space-x-2 mb-1">
-              <Heart className="h-5 w-5 text-purple-600" />
-              <span className="text-2xl font-bold text-purple-600">{pregnantGoats.length}</span>
+              <Heart className="h-5 w-5 text-primary" />
+              <span className="text-2xl font-bold text-primary">{pregnantGoats.length}</span>
             </div>
             <p className="text-sm text-muted-foreground">Pregnant</p>
           </CardContent>
@@ -241,7 +239,7 @@ export default function UltraProductiveGoatManagement() {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center space-x-2 mb-1">
-              <span className="text-2xl font-bold text-blue-600">{breeds.length}</span>
+              <span className="text-2xl font-bold text-primary">{breeds.length}</span>
             </div>
             <p className="text-sm text-muted-foreground">Breeds</p>
           </CardContent>

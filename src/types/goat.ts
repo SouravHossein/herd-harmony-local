@@ -1,4 +1,3 @@
-
 export interface MediaFile {
   id: string;
   filename: string;
@@ -7,6 +6,9 @@ export interface MediaFile {
   category: 'birth' | 'health' | 'growth' | 'breeding' | 'general' | 'milestone';
   timestamp: Date;
   description?: string;
+  tags?: string[];
+  fileSize?: number;
+  createdAt?: Date;
 }
 
 export interface Goat {

@@ -11,13 +11,12 @@ import {
   Weight, 
   Stethoscope, 
   Heart, 
-  Timeline, 
   Camera,
   Edit,
   Star,
   Baby,
-  MapPin,
-  FileText
+  FileText,
+  Activity
 } from 'lucide-react';
 import { Goat, WeightRecord, HealthRecord } from '@/types/goat';
 import GoatGeneralInfo from './GoatGeneralInfo';
@@ -75,19 +74,19 @@ export default function GoatProfile({
                   <img
                     src={goat.mediaFiles.find(m => m.type === 'image')!.url}
                     alt={goat.name}
-                    className="w-12 h-12 object-cover rounded-full border-2"
+                    className="w-12 h-12 object-cover rounded-full border-2 border-primary"
                   />
                 ) : (
-                  <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                     {goat.gender === 'female' ? (
-                      <Heart className="h-6 w-6 text-pink-500" />
+                      <Heart className="h-6 w-6 text-primary" />
                     ) : (
-                      <User className="h-6 w-6 text-blue-500" />
+                      <User className="h-6 w-6 text-primary" />
                     )}
                   </div>
                 )}
                 {goat.isFavorite && (
-                  <Star className="absolute -top-1 -right-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <Star className="absolute -top-1 -right-1 h-4 w-4 fill-primary text-primary" />
                 )}
               </div>
               <div>
@@ -111,26 +110,26 @@ export default function GoatProfile({
           {/* Quick Stats Bar */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{goat.currentWeight || '--'}</p>
+              <p className="text-2xl font-bold text-primary">{goat.currentWeight || '--'}</p>
               <p className="text-xs text-muted-foreground">Current Weight (kg)</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{goatHealthRecords.length}</p>
+              <p className="text-2xl font-bold text-primary">{goatHealthRecords.length}</p>
               <p className="text-xs text-muted-foreground">Health Records</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-purple-600">{goat.mediaFiles?.length || 0}</p>
+              <p className="text-2xl font-bold text-primary">{goat.mediaFiles?.length || 0}</p>
               <p className="text-xs text-muted-foreground">Media Files</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-orange-600">{goatWeightRecords.length}</p>
+              <p className="text-2xl font-bold text-primary">{goatWeightRecords.length}</p>
               <p className="text-xs text-muted-foreground">Weight Records</p>
             </div>
           </div>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general" className="flex items-center space-x-1">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">General</span>
@@ -141,7 +140,7 @@ export default function GoatProfile({
             </TabsTrigger>
             <TabsTrigger value="health" className="flex items-center space-x-1">
               <Stethoscope className="h-4 w-4" />
-              <span className="hidden sm:inline">Health</span>
+              <span className="hidden sm:inline">Health & AI</span>
             </TabsTrigger>
             <TabsTrigger value="breeding" className="flex items-center space-x-1">
               <Baby className="h-4 w-4" />
@@ -150,10 +149,6 @@ export default function GoatProfile({
             <TabsTrigger value="media" className="flex items-center space-x-1">
               <Camera className="h-4 w-4" />
               <span className="hidden sm:inline">Media</span>
-            </TabsTrigger>
-            <TabsTrigger value="timeline" className="flex items-center space-x-1">
-              <Timeline className="h-4 w-4" />
-              <span className="hidden sm:inline">Timeline</span>
             </TabsTrigger>
           </TabsList>
 
@@ -182,14 +177,6 @@ export default function GoatProfile({
 
             <TabsContent value="media" className="space-y-6">
               <GoatMediaGallery goat={goat} />
-            </TabsContent>
-
-            <TabsContent value="timeline" className="space-y-6">
-              <GoatTimeline 
-                goat={goat} 
-                weightRecords={goatWeightRecords}
-                healthRecords={goatHealthRecords}
-              />
             </TabsContent>
           </div>
         </Tabs>
