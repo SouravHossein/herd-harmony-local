@@ -33,7 +33,7 @@ import { useGoatData } from '@/hooks/useDatabase';
 import { FinanceAI } from '@/lib/financeAI';
 import { FinanceRecord, FinanceStats, GoatProfitability } from '@/types/finance';
 
-export function FinanceDashboard() {
+export default function FinanceDashboard() {
   const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
   const [stats, setStats] = useState<FinanceStats | null>(null);
   const [goatProfitability, setGoatProfitability] = useState<GoatProfitability[]>([]);

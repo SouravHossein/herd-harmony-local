@@ -5,10 +5,10 @@ export interface MediaFile {
   filename: string;
   url: string;
   timestamp: Date;
-  category: 'birth' | 'weaning' | 'breeding' | 'health' | 'milestone' | 'general';
+  category: 'birth' | 'health' | 'growth' | 'breeding' | 'general' | 'milestone' | 'weaning';
   tags: string[];
   description?: string;
-  fileSize: number;
+  fileSize?: number;
   thumbnailUrl?: string;
   createdAt: Date;
 }

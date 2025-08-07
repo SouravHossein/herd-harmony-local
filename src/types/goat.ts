@@ -3,12 +3,12 @@ export interface MediaFile {
   filename: string;
   type: 'image' | 'video';
   url: string;
-  category: 'birth' | 'health' | 'growth' | 'breeding' | 'general' | 'milestone';
+  category: 'birth' | 'health' | 'growth' | 'breeding' | 'general' | 'milestone' | 'weaning';
   timestamp: Date;
   description?: string;
-  tags?: string[];
+  tags: string[];
   fileSize?: number;
-  createdAt?: Date;
+  createdAt: Date;
 }
 
 export interface Goat {

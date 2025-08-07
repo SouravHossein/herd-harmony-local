@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGoatContext } from '@/context/GoatContext';
 import { Goat } from '@/types/goat';
-import { MediaFile } from '@/types/media';
+import { MediaFile } from '@/types/goat';
 import MediaGallery from './media/MediaGallery';
 import EnhancedParentSelector from './EnhancedParentSelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
     gender: 'female' as 'male' | 'female',
     dateOfBirth: '',
     color: '',
-    status: 'active' as 'active' | 'sold' | 'deceased',
+    status: 'active' as 'active' | 'sold' | 'deceased' | 'archived',
     hornStatus: 'horned' as 'horned' | 'polled' | 'disbudded',
     notes: '',
     fatherId: undefined as string | undefined,
@@ -215,7 +215,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
 
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value: 'active' | 'sold' | 'deceased') => setFormData({ ...formData, status: value })}>
+                  <Select value={formData.status} onValueChange={(value: 'active' | 'sold' | 'deceased' | 'archived') => setFormData({ ...formData, status: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -223,6 +223,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="sold">Sold</SelectItem>
                       <SelectItem value="deceased">Deceased</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
