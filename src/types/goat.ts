@@ -1,15 +1,24 @@
 
-import { MediaFile } from './media';
+export interface MediaFile {
+  id: string;
+  filename: string;
+  type: 'image' | 'video';
+  url: string;
+  category: 'birth' | 'health' | 'growth' | 'breeding' | 'general' | 'milestone';
+  timestamp: Date;
+  description?: string;
+}
 
 export interface Goat {
   id: string;
   name: string;
+  nickname?: string;
   breed: string;
   tagNumber: string;
   gender: 'male' | 'female';
   dateOfBirth: Date;
   color: string;
-  status: 'active' | 'sold' | 'deceased';
+  status: 'active' | 'sold' | 'deceased' | 'archived';
   hornStatus: 'horned' | 'polled' | 'disbudded';
   fatherId?: string;
   motherId?: string;
@@ -17,6 +26,12 @@ export interface Goat {
   imageId?: string; // Legacy field - keep for backward compatibility
   mediaFiles: MediaFile[]; // New enhanced media system
   notes?: string;
+  acquisitionType: 'born' | 'bought' | 'gifted' | 'transferred';
+  birthWeight?: number;
+  currentWeight?: number;
+  breedingStatus: 'kid' | 'active' | 'pregnant' | 'lactating' | 'resting' | 'retired';
+  tags: string[]; // Custom tags like "Top Breeder", "Watch", "For Sale"
+  isFavorite: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
