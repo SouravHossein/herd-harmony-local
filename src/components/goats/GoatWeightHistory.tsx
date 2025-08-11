@@ -13,7 +13,7 @@ import { Goat, WeightRecord } from '@/types/goat';
 interface GoatWeightHistoryProps {
   goat: Goat;
   weightRecords: WeightRecord[];
-  onAddWeight: (data: { date: Date; weight: number; notes: string }) => void;
+  onAddWeight?: (data: { date: Date; weight: number; notes: string }) => void;
   onUpdateWeight?: (recordId: string, data: { date: Date; weight: number; notes: string }) => void;
   onDeleteWeight?: (recordId: string) => void;
 }
@@ -48,15 +48,16 @@ export default function GoatWeightHistory({
     return 'text-gray-600';
   };
 
-  const handleAddWeight = (formData: FormData) => {
-    const weightData = {
-      date: new Date(formData.get('date') as string),
-      weight: parseFloat(formData.get('weight') as string),
-      notes: formData.get('notes') as string || '',
-    };
-    onAddWeight(weightData);
-    setIsAddDialogOpen(false);
+const handleAddWeight = (formData: FormData) => {
+  if (!onAddWeight) return;
+  const weightData = {
+    date: new Date(formData.get('date') as string),
+    weight: parseFloat(formData.get('weight') as string),
+    notes: (formData.get('notes') as string) || '',
   };
+  onAddWeight(weightData);
+  setIsAddDialogOpen(false);
+};
 
   const handleUpdateWeight = (formData: FormData) => {
     if (!editingRecord || !onUpdateWeight) return;
@@ -87,20 +88,22 @@ export default function GoatWeightHistory({
           <p className="text-sm text-muted-foreground">Tag #{goat.tagNumber}</p>
         </div>
         
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Weight
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Weight Record for {goat.name}</DialogTitle>
-            </DialogHeader>
-            <WeightForm onSubmit={handleAddWeight} />
-          </DialogContent>
-        </Dialog>
+{onAddWeight && (
+  <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+    <DialogTrigger asChild>
+      <Button>
+        <Plus className="h-4 w-4 mr-2" />
+        Add Weight
+      </Button>
+    </DialogTrigger>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Add Weight Record for {goat.name}</DialogTitle>
+      </DialogHeader>
+      <WeightForm onSubmit={handleAddWeight} />
+    </DialogContent>
+  </Dialog>
+)}
       </div>
 
       {/* Chart */}

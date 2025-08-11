@@ -18,7 +18,7 @@ interface GoatNodeData extends Record<string, unknown> {
     gender: 'male' | 'female';
     dateOfBirth: Date;
     color: string;
-    status: 'active' | 'sold' | 'deceased';
+    status: 'active' | 'sold' | 'deceased' | 'archived';
     imageId?: string;
   } | null;
   generation: number;
@@ -26,10 +26,11 @@ interface GoatNodeData extends Record<string, unknown> {
   onGoatSelect?: (goat: any) => void;
   onShowHealth?: (goatId: string) => void;
   onShowWeight?: (goatId: string) => void;
+  fatherImageUrl?: string | null;
 }
 
 const PedigreeNode = memo(({ data }: { data: GoatNodeData }) => {
-  const { goat, generation, isUnknown, onGoatSelect, onShowHealth, onShowWeight } = data;
+  const { goat, generation, isUnknown, onGoatSelect, onShowHealth, onShowWeight, fatherImageUrl } = data;
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const { getImage } = useImageStorage();
 
@@ -80,16 +81,26 @@ const PedigreeNode = memo(({ data }: { data: GoatNodeData }) => {
   return (
     <Card className={`w-64 shadow-lg ${getNodeColor()}`}>
       <CardContent className="p-4">
-        <div className="space-y-2">
-          {imageUrl && (
-            <div className="flex justify-center">
-              <img
-                src={imageUrl}
-                alt={goat.name}
-                className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
-              />
-            </div>
-          )}
+<div className="space-y-2">
+  {(imageUrl || fatherImageUrl) && (
+    <div className="flex justify-center relative">
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt={goat.name}
+          className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
+        />
+      )}
+      {fatherImageUrl && (
+        <img
+          src={fatherImageUrl}
+          alt="Father"
+          title="Father"
+          className="w-6 h-6 rounded-full object-cover border-2 border-background shadow absolute -top-1 -right-1"
+        />
+      )}
+    </div>
+  )}
           
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-lg">{goat.name}</h3>

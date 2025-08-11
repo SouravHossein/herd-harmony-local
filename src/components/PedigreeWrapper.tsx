@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import PedigreeTree from './PedigreeTree';
-import PedigreeEditor from './PedigreeEditor';
 import { PedigreeSidebar } from './PedigreeSidebar';
 import { useGoatContext } from '@/context/GoatContext';
 import { Goat } from '@/types/goat';
@@ -37,10 +36,10 @@ export function PedigreeWrapper({ onShowHealth, onShowWeight }: PedigreeWrapperP
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Pedigree Management</h2>
-          <p className="text-muted-foreground">
-            Explore lineage, edit relationships, and analyze genetic diversity
-          </p>
+<h2 className="text-2xl font-bold text-foreground">Pedigree</h2>
+<p className="text-muted-foreground">
+  Explore maternal lineage and analyze genetic diversity
+</p>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -79,10 +78,9 @@ export function PedigreeWrapper({ onShowHealth, onShowWeight }: PedigreeWrapperP
 
       {/* Main Content */}
       <Tabs defaultValue="tree" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="tree">Family Tree</TabsTrigger>
-          <TabsTrigger value="editor">Edit Pedigree</TabsTrigger>
-        </TabsList>
+<TabsList>
+  <TabsTrigger value="tree">Family Tree</TabsTrigger>
+</TabsList>
 
         <TabsContent value="tree">
           <div className="flex gap-6">
@@ -106,24 +104,6 @@ export function PedigreeWrapper({ onShowHealth, onShowWeight }: PedigreeWrapperP
           </div>
         </TabsContent>
 
-        <TabsContent value="editor">
-          <div className="flex gap-6">
-            <div className="flex-1">
-              <PedigreeEditor
-                selectedGoat={selectedGoat}
-                goats={goats}
-                onUpdateGoat={updateGoat}
-              />
-            </div>
-            <div className="flex-shrink-0 w-80">
-              <PedigreeSidebar
-                goat={selectedGoat}
-                onShowHealth={onShowHealth}
-                onShowWeight={onShowWeight}
-              />
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );

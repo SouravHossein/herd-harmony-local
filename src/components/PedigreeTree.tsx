@@ -1,5 +1,5 @@
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { 
   ReactFlow, 
   Node, 
@@ -66,19 +66,20 @@ export default function PedigreeTree({
       if (goat && processedGoats.has(goat.id)) return nodeId;
       if (goat) processedGoats.add(goat.id);
 
-      nodes.push({
-        id: nodeId,
-        type: 'pedigree',
-        position: { x, y },
-        data: {
-          goat,
-          generation,
-          isUnknown,
-          onGoatSelect,
-          onShowHealth,
-          onShowWeight,
-        },
-      });
+nodes.push({
+  id: nodeId,
+  type: 'pedigree',
+  position: { x, y },
+  data: {
+    goat,
+    generation,
+    isUnknown,
+    onGoatSelect,
+    onShowHealth,
+    onShowWeight,
+    fatherImageUrl: (goat?.fatherId ? (goats.find(g => g.id === goat.fatherId)?.mediaFiles?.find(m => m.type === 'image')?.url || null) : null),
+  },
+});
 
       return nodeId;
     };
@@ -93,54 +94,31 @@ export default function PedigreeTree({
 
       const nodeId = addGoatNode(goat, x, y, generation);
 
-      if (generation < generations - 1) {
-        const levelWidth = 200;
-        const generationSpacing = 250;
-        
-        // Add father
-        const father = goat.fatherId ? goats.find(g => g.id === goat.fatherId) : null;
-        const fatherY = y - 100;
-        const fatherX = x - generationSpacing;
-        
-        let fatherNodeId: string;
-        if (father) {
-          fatherNodeId = buildPedigree(father, fatherX, fatherY, generation + 1);
-        } else {
-          fatherNodeId = addGoatNode(null, fatherX, fatherY, generation + 1, true);
-        }
+if (generation < generations - 1) {
+  const generationSpacing = 250;
 
-        if (fatherNodeId) {
-          edges.push({
-            id: `${fatherNodeId}-${nodeId}`,
-            source: fatherNodeId,
-            target: nodeId,
-            style: { stroke: '#2563eb', strokeWidth: 2 },
-            type: 'smoothstep',
-          });
-        }
+  // Only traverse maternal line
+  const mother = goat.motherId ? goats.find(g => g.id === goat.motherId) : null;
+  const motherY = y; // keep aligned vertically for maternal line
+  const motherX = x - generationSpacing;
+  
+  let motherNodeId: string;
+  if (mother) {
+    motherNodeId = buildPedigree(mother, motherX, motherY, generation + 1);
+  } else {
+    motherNodeId = addGoatNode(null, motherX, motherY, generation + 1, true);
+  }
 
-        // Add mother
-        const mother = goat.motherId ? goats.find(g => g.id === goat.motherId) : null;
-        const motherY = y + 100;
-        const motherX = x - generationSpacing;
-        
-        let motherNodeId: string;
-        if (mother) {
-          motherNodeId = buildPedigree(mother, motherX, motherY, generation + 1);
-        } else {
-          motherNodeId = addGoatNode(null, motherX, motherY, generation + 1, true);
-        }
-
-        if (motherNodeId) {
-          edges.push({
-            id: `${motherNodeId}-${nodeId}`,
-            source: motherNodeId,
-            target: nodeId,
-            style: { stroke: '#dc2626', strokeWidth: 2 },
-            type: 'smoothstep',
-          });
-        }
-      }
+  if (motherNodeId) {
+    edges.push({
+      id: `${motherNodeId}-${nodeId}`,
+      source: motherNodeId,
+      target: nodeId,
+      style: { stroke: 'hsl(var(--primary))', strokeWidth: 2 },
+      type: 'smoothstep',
+    });
+  }
+}
 
       return nodeId;
     };
@@ -158,22 +136,25 @@ export default function PedigreeTree({
     [setEdges]
   );
 
-  return (
-    <div className="w-full h-full">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        fitView
-        attributionPosition="bottom-left"
-        className="bg-background"
-      >
-        <Controls />
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-      </ReactFlow>
-    </div>
-  );
+return (
+  <div className="w-full h-full">
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nodeTypes}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      fitView
+      nodesDraggable={false}
+      nodesConnectable={false}
+      elementsSelectable={false}
+      edgesUpdatable={false}
+      attributionPosition="bottom-left"
+      className="bg-background"
+    >
+      <Controls />
+      <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+    </ReactFlow>
+  </div>
+);
 }
