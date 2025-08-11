@@ -239,7 +239,7 @@ export default function MediaGallery({
                         {media.category}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {media.timestamp.toLocaleDateString()}
+                        {new Date(media.timestamp).toLocaleDateString()}
                       </span>
                     </div>
                     

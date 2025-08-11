@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +60,7 @@ export default function GoatHealthHistory({ goat, healthRecords }: GoatHealthHis
 
   const calculateAge = (birthDate: Date): number => {
     const now = new Date();
-    const ageMs = now.getTime() - birthDate.getTime();
+    const ageMs = now.getTime() - new Date(birthDate).getTime();
     return Math.floor(ageMs / (1000 * 60 * 60 * 24 * 30.44)); // months
   };
 

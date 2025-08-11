@@ -403,7 +403,7 @@ export default function BreedingWorkflow() {
 
       {showKiddingForm && (
         <EnhancedKiddingForm
-          isOpen={showKiddingForm}
+          // isOpen={showKiddingForm}
           onCancel={() => setShowKiddingForm(false)}
           onSubmit={handleKiddingSubmit}
           breedingRecords={breedingRecords}

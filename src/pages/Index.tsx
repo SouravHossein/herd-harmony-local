@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import AllInOneDashboard from '@/components/AllInOneDashboard';
-import  GoatManagement  from '@/components/GoatManagement';
+// import  GoatManagement  from '@/components/GoatManagement';
 import { HealthDashboard } from '@/components/HealthDashboard';
 import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
@@ -13,6 +13,7 @@ import BreedingPlanner from '@/components/breeding/BreedingPlanner';
 import { WeatherDashboard } from '@/components/weather/WeatherDashboard';
 import Settings from '@/components/Settings';
 import { WeightTracking } from '@/components/WeightTracking';
+import UltraProductiveGoatManagement from '@/components/goats/UltraProductiveGoatManagement';
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -30,7 +31,7 @@ export default function Index() {
       case 'dashboard':
         return <AllInOneDashboard />;
       case 'goats':
-        return <GoatManagement />;
+        return <UltraProductiveGoatManagement />;
       case 'weight':
         return <WeightTracking />;
       case 'health':

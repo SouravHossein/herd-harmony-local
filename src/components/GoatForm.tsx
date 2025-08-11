@@ -53,7 +53,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
         breed: goat.breed,
         tagNumber: goat.tagNumber,
         gender: goat.gender,
-        dateOfBirth: goat.dateOfBirth.toISOString().split('T')[0],
+        dateOfBirth: new Date(goat.dateOfBirth).toISOString().split('T')[0],
         color: goat.color,
         status: goat.status,
         hornStatus: goat.hornStatus,

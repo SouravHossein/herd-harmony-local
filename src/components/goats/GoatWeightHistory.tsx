@@ -1,17 +1,33 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Weight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Weight, Plus, Edit2, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Goat, WeightRecord } from '@/types/goat';
 
 interface GoatWeightHistoryProps {
   goat: Goat;
   weightRecords: WeightRecord[];
+  onAddWeight: (data: { date: Date; weight: number; notes: string }) => void;
+  onUpdateWeight?: (recordId: string, data: { date: Date; weight: number; notes: string }) => void;
+  onDeleteWeight?: (recordId: string) => void;
 }
 
-export default function GoatWeightHistory({ goat, weightRecords }: GoatWeightHistoryProps) {
+export default function GoatWeightHistory({ 
+  goat, 
+  weightRecords, 
+  onAddWeight,
+  onUpdateWeight,
+  onDeleteWeight 
+}: GoatWeightHistoryProps) {
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<WeightRecord | null>(null);
+
   const sortedRecords = weightRecords.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const chartData = sortedRecords.map(record => ({
@@ -32,8 +48,61 @@ export default function GoatWeightHistory({ goat, weightRecords }: GoatWeightHis
     return 'text-gray-600';
   };
 
+  const handleAddWeight = (formData: FormData) => {
+    const weightData = {
+      date: new Date(formData.get('date') as string),
+      weight: parseFloat(formData.get('weight') as string),
+      notes: formData.get('notes') as string || '',
+    };
+    onAddWeight(weightData);
+    setIsAddDialogOpen(false);
+  };
+
+  const handleUpdateWeight = (formData: FormData) => {
+    if (!editingRecord || !onUpdateWeight) return;
+    
+    const updates = {
+      date: new Date(formData.get('date') as string),
+      weight: parseFloat(formData.get('weight') as string),
+      notes: formData.get('notes') as string || '',
+    };
+    
+    onUpdateWeight(editingRecord.id, updates);
+    setEditingRecord(null);
+  };
+
+  const handleDeleteWeight = (record: WeightRecord) => {
+    if (!onDeleteWeight) return;
+    if (confirm(`Are you sure you want to delete this weight record?`)) {
+      onDeleteWeight(record.id);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header with Add Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Weight History - {goat.name}</h3>
+          <p className="text-sm text-muted-foreground">Tag #{goat.tagNumber}</p>
+        </div>
+        
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Weight
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Weight Record for {goat.name}</DialogTitle>
+            </DialogHeader>
+            <WeightForm onSubmit={handleAddWeight} />
+          </DialogContent>
+        </Dialog>
+      </div>
+
       {/* Chart */}
       <Card>
         <CardHeader>
@@ -84,10 +153,10 @@ export default function GoatWeightHistory({ goat, weightRecords }: GoatWeightHis
         </CardContent>
       </Card>
 
-      {/* Weight Records Table */}
+      {/* Weight Records */}
       <Card>
         <CardHeader>
-          <CardTitle>Weight History</CardTitle>
+          <CardTitle>Weight Records</CardTitle>
         </CardHeader>
         <CardContent>
           {sortedRecords.length > 0 ? (
@@ -125,6 +194,28 @@ export default function GoatWeightHistory({ goat, weightRecords }: GoatWeightHis
                         </p>
                       )}
                     </div>
+                    
+                    <div className="flex space-x-2">
+                      {onUpdateWeight && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingRecord(record)}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {onDeleteWeight && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteWeight(record)}
+                          className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -138,6 +229,84 @@ export default function GoatWeightHistory({ goat, weightRecords }: GoatWeightHis
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      {editingRecord && onUpdateWeight && (
+        <Dialog open={!!editingRecord} onOpenChange={() => setEditingRecord(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Weight Record for {goat.name}</DialogTitle>
+            </DialogHeader>
+            <WeightForm 
+              onSubmit={handleUpdateWeight} 
+              initialData={editingRecord}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
+  );
+}
+
+interface WeightFormProps {
+  onSubmit: (formData: FormData) => void;
+  initialData?: WeightRecord;
+}
+
+function WeightForm({ onSubmit, initialData }: WeightFormProps) {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    onSubmit(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="date">Date *</Label>
+        <Input
+          id="date"
+          name="date"
+          type="date"
+          defaultValue={
+            initialData 
+              ? new Date(initialData.date).toISOString().split('T')[0]
+              : new Date().toISOString().split('T')[0]
+          }
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="weight">Weight (kg) *</Label>
+        <Input
+          id="weight"
+          name="weight"
+          type="number"
+          step="0.1"
+          min="0"
+          defaultValue={initialData?.weight || ''}
+          placeholder="Enter weight in kg"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">Notes</Label>
+        <Textarea
+          id="notes"
+          name="notes"
+          defaultValue={initialData?.notes || ''}
+          placeholder="Optional notes about the weight measurement"
+          rows={3}
+        />
+      </div>
+
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button type="submit">
+          {initialData ? 'Update Record' : 'Add Record'}
+        </Button>
+      </div>
+    </form>
   );
 }
