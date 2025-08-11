@@ -82,16 +82,38 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
 
   useEffect(() => {
     // Validate parentage when parents change
-    if (goat?.id || (formData.fatherId || formData.motherId)) {
+    if ((goat?.id || formData.fatherId || formData.motherId) && formData.dateOfBirth) {
+      const tempGoat = {
+        ...goat,
+        id: goat?.id || `temp-${Date.now()}`, // Use temporary ID for new goats
+        name: formData.name || 'New Goat',
+        dateOfBirth: new Date(formData.dateOfBirth),
+        breed: formData.breed || '',
+        tagNumber: formData.tagNumber || '',
+        gender: formData.gender,
+        color: formData.color || '',
+        status: formData.status,
+        hornStatus: formData.hornStatus,
+        notes: formData.notes || '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        mediaFiles: [],
+        isFavorite: false,
+        tags: [],
+        breedingStatus: 'active'
+      } as Goat;
+      
       const validation = PedigreeAI.validateParentage(
-        { ...goat, dateOfBirth: new Date(formData.dateOfBirth) } as Goat,
+        tempGoat,
         formData.fatherId,
         formData.motherId,
         goats
       );
       setPedigreeValidation(validation);
+    } else {
+      setPedigreeValidation({ isValid: true, warnings: [], errors: [] });
     }
-  }, [formData.fatherId, formData.motherId, formData.dateOfBirth, goat, goats]);
+  }, [formData.fatherId, formData.motherId, formData.dateOfBirth, formData.name, goat, goats]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -8,9 +8,7 @@ import {
   Background, 
   BackgroundVariant,
   useNodesState,
-  useEdgesState,
-  addEdge,
-  Connection
+  useEdgesState
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import PedigreeNode from './PedigreeNode';
@@ -131,11 +129,6 @@ if (generation < generations - 1) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
-
 return (
   <div className="w-full h-full">
     <ReactFlow
@@ -148,7 +141,6 @@ return (
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
-      edgesUpdatable={false}
       attributionPosition="bottom-left"
       className="bg-background"
     >

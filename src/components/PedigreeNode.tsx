@@ -38,7 +38,12 @@ const PedigreeNode = memo(({ data }: { data: GoatNodeData }) => {
     if (goat?.imageId) {
       getImage(goat.imageId).then(url => {
         if (url) setImageUrl(url);
+      }).catch(err => {
+        console.warn('Failed to load image for goat:', goat.name, err);
+        setImageUrl(null);
       });
+    } else {
+      setImageUrl(null);
     }
   }, [goat?.imageId, getImage]);
 

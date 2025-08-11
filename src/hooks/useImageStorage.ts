@@ -9,7 +9,10 @@ export interface StoredImage {
 }
 
 export function useImageStorage() {
-  const [images, setImages] = useState<Map<string, StoredImage>>(new Map());
+  const [images, setImages] = useState<Map<string, StoredImage>>(() => {
+    // Initialize with persistent storage check
+    return new Map();
+  });
 
   const storeImage = useCallback(async (file: File, id?: string): Promise<string> => {
     try {
@@ -66,9 +69,17 @@ export function useImageStorage() {
       const cached = images.get(imageId);
       if (cached) return cached.url;
 
-      // Then check IndexedDB
-      return new Promise((resolve, reject) => {
+      // Then check IndexedDB for persistent storage
+      return new Promise((resolve) => {
         const request = indexedDB.open('GoatTrackerImages', 1);
+        
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains('images')) {
+            db.createObjectStore('images', { keyPath: 'id' });
+          }
+        };
+        
         request.onsuccess = () => {
           const db = request.result;
           const transaction = db.transaction(['images'], 'readonly');
@@ -80,6 +91,16 @@ export function useImageStorage() {
             if (result) {
               const blob = new Blob([result.data], { type: result.type });
               const url = URL.createObjectURL(blob);
+              
+              // Cache in memory for faster access
+              const storedImage: StoredImage = {
+                id: imageId,
+                file: new File([blob], result.name, { type: result.type }),
+                url,
+                timestamp: new Date(result.timestamp)
+              };
+              setImages(prev => new Map(prev.set(imageId, storedImage)));
+              
               resolve(url);
             } else {
               resolve(null);
@@ -88,6 +109,7 @@ export function useImageStorage() {
           
           getRequest.onerror = () => resolve(null);
         };
+        
         request.onerror = () => resolve(null);
       });
     } catch (error) {

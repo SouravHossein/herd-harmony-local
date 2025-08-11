@@ -23,23 +23,28 @@ export class PedigreeAI {
     const warnings: string[] = [];
     const errors: string[] = [];
 
-    // Prevent self-parenting
-    if (fatherId === goat.id || motherId === goat.id) {
-      errors.push('A goat cannot be its own parent');
+    // Skip validation for new goats (those without IDs or with temporary IDs)
+    const isNewGoat = !goat.id || goat.id.startsWith('temp-') || goat.id.startsWith('new-');
+    
+    if (!isNewGoat) {
+      // Prevent self-parenting
+      if (fatherId === goat.id || motherId === goat.id) {
+        errors.push('A goat cannot be its own parent');
+      }
+
+      // Check for circular relationships only for existing goats
+      if (fatherId && this.wouldCreateCircularRelationship(goat.id, fatherId, allGoats)) {
+        errors.push('This would create a circular relationship in the pedigree');
+      }
+      
+      if (motherId && this.wouldCreateCircularRelationship(goat.id, motherId, allGoats)) {
+        errors.push('This would create a circular relationship in the pedigree');
+      }
     }
 
     // Prevent same goat as both parents
     if (fatherId && motherId && fatherId === motherId) {
       errors.push('A goat cannot have the same parent as both father and mother');
-    }
-
-    // Check for circular relationships
-    if (fatherId && this.wouldCreateCircularRelationship(goat.id, fatherId, allGoats)) {
-      errors.push('This would create a circular relationship in the pedigree');
-    }
-    
-    if (motherId && this.wouldCreateCircularRelationship(goat.id, motherId, allGoats)) {
-      errors.push('This would create a circular relationship in the pedigree');
     }
 
     // Age validation
