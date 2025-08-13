@@ -19,7 +19,7 @@ import {
 import { useGoatContext } from '@/context/GoatContext';
 import { Goat } from '@/types/goat';
 import GoatCard from './GoatCard';
-import GoatProfile from './GoatProfile';
+import InteractiveGoatProfile from './InteractiveGoatProfile';
 import GoatForm from '../GoatForm';
 import { toast } from '@/components/ui/use-toast';
 
@@ -409,13 +409,19 @@ export default function UltraProductiveGoatManagement() {
         onSubmit={handleSubmitGoat}
       />
 
-      <GoatProfile
+      <InteractiveGoatProfile
         goat={selectedGoat}
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onEdit={handleEditGoat}
         weightRecords={weightRecords}
         healthRecords={healthRecords}
+        onAddWeight={addWeightRecord}
+        onUpdateWeight={updateWeightRecord}
+        onDeleteWeight={deleteWeightRecord}
+        onAddHealthRecord={addHealthRecord}
+        onUpdateHealthRecord={updateHealthRecord}
+        onDeleteHealthRecord={deleteHealthRecord}
       />
     </div>
   );
