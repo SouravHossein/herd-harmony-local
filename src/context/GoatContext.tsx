@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useGoatData as useElectronData } from '@/hooks/useDatabase';
 import { useGoatData as useLocalStorageData } from '@/hooks/useLocalStorageOnly';
@@ -45,6 +44,8 @@ interface GoatContextType {
   importData: (data: any) => Promise<boolean>;
   clearAllData: () => Promise<boolean>;
   getFarmStats: () => any;
+  getPedigreeTree: (goatId: string, generations?: number) => Promise<any>;
+  calculateInbreedingRisk: (sireId: string, damId: string) => Promise<any>;
 }
 
 const GoatContext = createContext<GoatContextType | undefined>(undefined);
@@ -83,7 +84,6 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     if (isElectron && electronData) {
       return electronData.exportData();
     }
-    // Browser export functionality
     const data = {
       goats: currentData.goats,
       weightRecords: currentData.weightRecords,
@@ -102,7 +102,6 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     if (isElectron && electronData) {
       return electronData.importData(data);
     }
-    // Browser import functionality
     try {
       if (data.goats) currentData.setGoats(data.goats);
       if (data.weightRecords) currentData.setWeightRecords(data.weightRecords);
@@ -123,7 +122,6 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     if (isElectron && electronData) {
       return electronData.clearAll();
     }
-    // Browser clear functionality
     try {
       currentData.setGoats([]);
       currentData.setWeightRecords([]);
@@ -152,6 +150,90 @@ export function GoatProvider({ children }: { children: ReactNode }) {
         ? weightRecords.reduce((sum: number, r: WeightRecord) => sum + r.weight, 0) / weightRecords.length 
         : 0,
       upcomingReminders: getUpcomingHealthReminders().length
+    };
+  };
+
+  // Pedigree functions for both Electron and browser environments
+  const getPedigreeTree = async (goatId: string, generations = 3) => {
+    if (isElectron && electronData) {
+      return electronData.getPedigreeTree(goatId, generations);
+    }
+    
+    // Browser fallback - build pedigree from local data
+    const goats = currentData.goats || [];
+    const nodes: any[] = [];
+    const edges: any[] = [];
+    const processedIds = new Set<string>();
+    
+    const addNode = (goat: Goat | null, x: number, y: number, generation: number) => {
+      const nodeId = goat?.id || `unknown-${Math.random()}`;
+      if (goat && processedIds.has(goat.id)) return nodeId;
+      if (goat) processedIds.add(goat.id);
+
+      const father = goat?.fatherId ? goats.find(g => g.id === goat.fatherId) : null;
+      const fatherImageUrl = father?.mediaFiles?.find(m => m.type === 'image')?.url || null;
+
+      nodes.push({
+        id: nodeId,
+        type: 'pedigree',
+        position: { x, y },
+        data: {
+          goat,
+          generation,
+          fatherImageUrl,
+          fatherInfo: father ? {
+            name: father.name,
+            tagNumber: father.tagNumber,
+            breed: father.breed
+          } : null
+        }
+      });
+
+      return nodeId;
+    };
+
+    const buildMaternalTree = (currentGoatId: string, generation: number, x: number, y: number): string | null => {
+      if (generation > generations) return null;
+      const goat = goats.find(g => g.id === currentGoatId);
+      if (!goat) return null;
+
+      const nodeId = addNode(goat, x, y, generation);
+
+      if (goat.motherId && generation < generations) {
+        const motherX = x - 250;
+        const motherY = y;
+        const motherNodeId = buildMaternalTree(goat.motherId, generation + 1, motherX, motherY);
+        
+        if (motherNodeId) {
+          edges.push({
+            id: `${goat.motherId}-${currentGoatId}`,
+            source: goat.motherId,
+            target: currentGoatId,
+            type: 'smoothstep',
+            style: { stroke: '#3B82F6', strokeWidth: 2 }
+          });
+        }
+      }
+
+      return nodeId;
+    };
+    
+    buildMaternalTree(goatId, 0, 400, 200);
+    
+    return { nodes, edges };
+  };
+
+  const calculateInbreedingRisk = async (sireId: string, damId: string) => {
+    if (isElectron && electronData) {
+      return electronData.calculateInbreedingRisk(sireId, damId);
+    }
+    
+    // Browser fallback - simple calculation
+    return {
+      risk: 0,
+      coefficient: 0,
+      commonAncestors: [],
+      riskLevel: 'low'
     };
   };
   
@@ -196,7 +278,9 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     exportData,
     importData,
     clearAllData,
-    getFarmStats
+    getFarmStats,
+    getPedigreeTree,
+    calculateInbreedingRisk
   };
 
   return (

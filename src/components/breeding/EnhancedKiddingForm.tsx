@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,8 @@ import { Camera, Upload, X, Users } from "lucide-react";
 import { BreedingRecord } from '@/types/breeding';
 import { Goat } from '@/types/goat';
 import { useGoatContext } from '@/context/GoatContext';
+import { BreedingManager } from '@/lib/BreedingManager';
+import { toast } from '@/components/ui/use-toast';
 
 interface EnhancedKiddingFormProps {
   breedingRecords: BreedingRecord[];
@@ -41,7 +42,7 @@ export default function EnhancedKiddingForm({
   onSubmit, 
   onCancel 
 }: EnhancedKiddingFormProps) {
-  const { goats } = useGoatContext();
+  const { goats, addGoat, updateBreedingRecord } = useGoatContext();
   const [selectedBreeding, setSelectedBreeding] = useState('');
   const [birthDate, setBirthDate] = useState(new Date().toISOString().split('T')[0]);
   const [totalKids, setTotalKids] = useState(1);
@@ -59,6 +60,7 @@ export default function EnhancedKiddingForm({
   const [complications, setComplications] = useState('');
   const [vetAssistance, setVetAssistance] = useState(false);
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedBreedingRecord = breedingRecords.find(br => br.id === selectedBreeding);
   const sire = selectedBreedingRecord ? goats.find(g => g.id === selectedBreedingRecord.sireId) : null;
@@ -99,7 +101,6 @@ export default function EnhancedKiddingForm({
       const file = files[i];
       if (file && file.type.startsWith('image/')) {
         try {
-          // Convert to base64 for local storage
           const reader = new FileReader();
           reader.onload = (e) => {
             if (e.target?.result) {
@@ -124,22 +125,51 @@ export default function EnhancedKiddingForm({
     updateKidDetail(kidIndex, 'photos', updatedPhotos);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBreeding) return;
+    if (!selectedBreeding || !selectedBreedingRecord) return;
 
-    onSubmit({
-      breedingId: selectedBreeding,
-      birthDate: new Date(birthDate),
-      totalKids,
-      kidDetails: kidDetails.map(kid => ({
-        ...kid,
-        photos: kid.photos || []
-      })),
-      complications: complications || undefined,
-      vetAssistance,
-      notes: notes || undefined,
-    });
+    setIsSubmitting(true);
+    try {
+      // Use BreedingManager to process kidding and create goat records
+      const kiddingData = {
+        breedingId: selectedBreeding,
+        birthDate: new Date(birthDate),
+        totalKids,
+        kidDetails: kidDetails.map(kid => ({
+          ...kid,
+          photos: kid.photos || []
+        })),
+        complications: complications || undefined,
+        vetAssistance,
+        notes: notes || undefined,
+      };
+
+      const result = await BreedingManager.processKiddingRecord(
+        kiddingData,
+        selectedBreedingRecord,
+        addGoat
+      );
+
+      // Update the breeding record with kidding information
+      await updateBreedingRecord(selectedBreeding, result.updatedBreedingRecord);
+
+      toast({
+        title: "Kidding recorded successfully",
+        description: `Created ${result.createdGoatIds.length} new goat records`,
+      });
+
+      onSubmit(kiddingData);
+    } catch (error) {
+      console.error('Error recording kidding:', error);
+      toast({
+        title: "Error recording kidding",
+        description: "Failed to create goat records. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -164,13 +194,13 @@ export default function EnhancedKiddingForm({
                   <SelectValue placeholder="Select a breeding record" />
                 </SelectTrigger>
                 <SelectContent>
-                  {breedingRecords.map((breeding) => (
+                  {breedingRecords
+                    .filter(breeding => breeding.pregnancyStatus === 'confirmed' && !breeding.actualBirthDate)
+                    .map((breeding) => (
                     <SelectItem key={breeding.id} value={breeding.id}>
                       <div className="flex items-center space-x-2">
                         <span>Breeding {new Date(breeding.breedingDate).toLocaleDateString()}</span>
-                        {breeding.pregnancyStatus === 'confirmed' && (
-                          <Badge variant="default">Confirmed</Badge>
-                        )}
+                        <Badge variant="default">Confirmed</Badge>
                       </div>
                     </SelectItem>
                   ))}
@@ -382,8 +412,8 @@ export default function EnhancedKiddingForm({
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!selectedBreeding}>
-              Record Kidding
+            <Button type="submit" disabled={!selectedBreeding || isSubmitting}>
+              {isSubmitting ? 'Recording...' : 'Record Kidding'}
             </Button>
           </div>
         </form>
