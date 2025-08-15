@@ -5,8 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import PedigreeTree from './PedigreeTree';
 import { PedigreeSidebar } from './PedigreeSidebar';
+import AllGoatsPedigreeView from './pedigree/AllGoatsPedigreeView';
 import { useGoatContext } from '@/context/GoatContext';
 import { Goat } from '@/types/goat';
+import { TreePine, GitBranch, Database } from 'lucide-react';
 
 interface PedigreeWrapperProps {
   onShowHealth: (goatId: string) => void;
@@ -36,10 +38,10 @@ export function PedigreeWrapper({ onShowHealth, onShowWeight }: PedigreeWrapperP
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-<h2 className="text-2xl font-bold text-foreground">Pedigree</h2>
-<p className="text-muted-foreground">
-  Explore maternal lineage and analyze genetic diversity
-</p>
+          <h2 className="text-2xl font-bold text-foreground">Pedigree Management</h2>
+          <p className="text-muted-foreground">
+            Explore family trees, analyze genetic diversity, and manage breeding decisions
+          </p>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -76,11 +78,22 @@ export function PedigreeWrapper({ onShowHealth, onShowWeight }: PedigreeWrapperP
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Enhanced Tabs */}
       <Tabs defaultValue="tree" className="space-y-4">
-<TabsList>
-  <TabsTrigger value="tree">Family Tree</TabsTrigger>
-</TabsList>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="tree" className="flex items-center space-x-2">
+            <GitBranch className="h-4 w-4" />
+            <span>Maternal Tree</span>
+          </TabsTrigger>
+          <TabsTrigger value="database" className="flex items-center space-x-2">
+            <Database className="h-4 w-4" />
+            <span>All Goats View</span>
+          </TabsTrigger>
+          <TabsTrigger value="analysis" className="flex items-center space-x-2">
+            <TreePine className="h-4 w-4" />
+            <span>Tree Analysis</span>
+          </TabsTrigger>
+        </TabsList>
 
         <TabsContent value="tree">
           <div className="flex gap-6">
@@ -104,6 +117,26 @@ export function PedigreeWrapper({ onShowHealth, onShowWeight }: PedigreeWrapperP
           </div>
         </TabsContent>
 
+        <TabsContent value="database">
+          <AllGoatsPedigreeView />
+        </TabsContent>
+
+        <TabsContent value="analysis">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Breeding Insights</h3>
+              <p className="text-muted-foreground">
+                AI-powered breeding suggestions and genetic diversity analysis coming soon.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Tree Statistics</h3>
+              <p className="text-muted-foreground">
+                Comprehensive family tree statistics and inbreeding analysis.
+              </p>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );

@@ -31,6 +31,12 @@ export default function UltraProductiveGoatManagement() {
     deleteGoat, 
     weightRecords,
     healthRecords,
+    addWeightRecord,
+    updateWeightRecord,
+    deleteWeightRecord,
+    addHealthRecord,
+    updateHealthRecord,
+    deleteHealthRecord,
     loading, 
     error 
   } = useGoatContext();
