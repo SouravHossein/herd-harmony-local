@@ -1,17 +1,15 @@
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { useGoatContext } from '@/context/GoatContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/utils';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   Plus,
   Weight,
@@ -19,8 +17,14 @@ import {
   TrendingDown,
   Minus,
   Edit2,
-  Trash2
+  Trash2,
+  Users,
+  Scale,
+  Calculator
 } from 'lucide-react';
+import { WeightHistoryChart } from '@/components/weight/WeightHistoryChart';
+import { MultiGoatWeightEntry, MultiGoatWeightData } from '@/components/weight/MultiGoatWeightEntry';
+import { WeightInputForm, WeightFormData } from '@/components/weight/WeightInputForm';
 
 export function WeightTracking() {
   const {
@@ -34,18 +38,12 @@ export function WeightTracking() {
   const { toast } = useToast();
   const [selectedGoatId, setSelectedGoatId] = useState<string>('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isMultiEntryOpen, setIsMultiEntryOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
 
   const activeGoats = goats.filter(goat => goat.status === 'active');
   const selectedGoat = goats.find(goat => goat.id === selectedGoatId);
   const weightHistory = selectedGoatId ? getGoatWeightHistory(selectedGoatId) : [];
-
-  // Prepare chart data
-  const chartData = weightHistory.map(record => ({
-    date: new Date(record.date).toLocaleDateString(),
-    weight: record.weight,
-    fullDate: record.date
-  }));
 
   // Calculate weight trends
   const getWeightTrend = (history: any[]) => {
@@ -58,60 +56,59 @@ export function WeightTracking() {
       direction: change > 0 ? 'up' : change < 0 ? 'down' : 'stable'
     };
   };
-  // Update the handleAddWeight function
-  const handleAddWeight = (formData: FormData) => {
-    const date = new Date(formData.get('date') as string);
 
-    if (formData.has('goatId')) {
-      // Single weight record
-      const weightData = {
-        goatId: formData.get('goatId') as string,
-        date: date,
-        weight: parseFloat(formData.get('weight') as string),
-        notes: formData.get('notes') as string,
-      };
+  const handleAddSingleWeight = (data: WeightFormData) => {
+    if (!selectedGoat) return;
 
-      addWeightRecord(weightData);
-      const goat = goats.find(g => g.id === weightData.goatId);
-      toast({
-        title: "Weight Record Added",
-        description: `Recorded ${weightData.weight}kg for ${goat?.name}`,
-      });
-    } else {
-      // Multiple weight records
-      let addedCount = 0;
-      goats.forEach(goat => {
-        const weight = formData.get(`weight-${goat.id}`);
-        if (weight && parseFloat(weight as string) > 0) {
-          const weightData = {
-            goatId: goat.id,
-            date: date,
-            weight: parseFloat(weight as string),
-            notes: formData.get(`notes-${goat.id}`) as string,
-          };
-          addWeightRecord(weightData);
-          addedCount++;
-        }
-      });
+    const weightData = {
+      goatId: selectedGoat.id,
+      date: data.date,
+      weight: data.weight,
+      method: data.method,
+      chestGirth: data.chestGirth,
+      bodyLength: data.bodyLength,
+      notes: data.notes,
+    };
 
-      toast({
-        title: "Weight Records Added",
-        description: `Successfully added ${addedCount} weight records`,
-      });
-    }
-
+    addWeightRecord(weightData);
     setIsAddDialogOpen(false);
+    toast({
+      title: "Weight Record Added",
+      description: `Recorded ${data.weight}kg for ${selectedGoat.name} using ${data.method} measurement.`,
+    });
   };
 
+  const handleMultiGoatSave = (entries: MultiGoatWeightData[]) => {
+    entries.forEach(entry => {
+      const weightData = {
+        goatId: entry.goatId,
+        date: entry.date,
+        weight: entry.weight,
+        method: entry.method,
+        chestGirth: entry.chestGirth,
+        bodyLength: entry.bodyLength,
+        notes: entry.notes,
+      };
+      addWeightRecord(weightData);
+    });
 
+    setIsMultiEntryOpen(false);
+    toast({
+      title: "Weight Records Added",
+      description: `Successfully added ${entries.length} weight records`,
+    });
+  };
 
-  const handleUpdateWeight = (formData: FormData) => {
+  const handleUpdateWeight = (data: WeightFormData) => {
     if (!editingRecord) return;
 
     const updates = {
-      date: new Date(formData.get('date') as string),
-      weight: parseFloat(formData.get('weight') as string),
-      notes: formData.get('notes') as string,
+      date: data.date,
+      weight: data.weight,
+      method: data.method,
+      chestGirth: data.chestGirth,
+      bodyLength: data.bodyLength,
+      notes: data.notes,
     };
 
     updateWeightRecord(editingRecord.id, updates);
@@ -142,24 +139,51 @@ export function WeightTracking() {
           <p className="text-muted-foreground">Monitor and track goat weights over time</p>
         </div>
 
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-primary hover:bg-primary-glow shadow-glow">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Weight Records
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Weight Records</DialogTitle>
-            </DialogHeader>
-            <WeightForm
-              onSubmit={handleAddWeight}
-              goats={activeGoats}
-              isMultiple={true}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center space-x-2">
+          <Dialog open={isMultiEntryOpen} onOpenChange={setIsMultiEntryOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center space-x-2">
+                <Users className="h-4 w-4" />
+                <span>Multi-Goat Entry</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Multi-Goat Weight Entry</DialogTitle>
+              </DialogHeader>
+              <MultiGoatWeightEntry
+                goats={activeGoats}
+                onSave={handleMultiGoatSave}
+                onCancel={() => setIsMultiEntryOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-primary hover:bg-primary-glow shadow-glow">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Weight Record
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Weight Record</DialogTitle>
+              </DialogHeader>
+              {selectedGoat ? (
+                <WeightInputForm
+                  onSubmit={handleAddSingleWeight}
+                  onCancel={() => setIsAddDialogOpen(false)}
+                  goatName={selectedGoat.name}
+                />
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  Please select a goat first
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Goat Selector */}
@@ -199,6 +223,18 @@ export function WeightTracking() {
                     <p className="text-2xl font-bold text-foreground">
                       {weightHistory.length > 0 ? `${weightHistory[weightHistory.length - 1].weight} kg` : 'No data'}
                     </p>
+                    {weightHistory.length > 0 && (
+                      <div className="flex items-center space-x-1 mt-1">
+                        {weightHistory[weightHistory.length - 1].method === 'actual' ? (
+                          <Scale className="h-3 w-3 text-primary" />
+                        ) : (
+                          <Calculator className="h-3 w-3 text-accent" />
+                        )}
+                        <span className="text-xs text-muted-foreground capitalize">
+                          {weightHistory[weightHistory.length - 1].method}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <Weight className="h-8 w-8 text-primary" />
                 </div>
@@ -217,7 +253,7 @@ export function WeightTracking() {
                       return (
                         <div className="flex items-center space-x-2">
                           <p className="text-2xl font-bold text-foreground">
-                            {trend.direction === 'stable' ? '0' : `±${trend.change}`} kg
+                            {trend.direction === 'stable' ? '0' : `±${trend.change.toFixed(1)}`} kg
                           </p>
                           {trend.direction === 'up' && <TrendingUp className="h-5 w-5 text-success" />}
                           {trend.direction === 'down' && <TrendingDown className="h-5 w-5 text-destructive" />}
@@ -236,6 +272,14 @@ export function WeightTracking() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Records</p>
                     <p className="text-2xl font-bold text-foreground">{weightHistory.length}</p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {weightHistory.filter(r => r.method === 'actual').length} actual
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {weightHistory.filter(r => r.method === 'estimated').length} estimated
+                      </Badge>
+                    </div>
                   </div>
                   <div className="h-8 w-8 bg-gradient-primary rounded-lg flex items-center justify-center">
                     <span className="text-primary-foreground font-bold text-sm">#</span>
@@ -246,47 +290,10 @@ export function WeightTracking() {
           </div>
 
           {/* Weight Chart */}
-          {chartData.length > 0 && (
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Weight History for {selectedGoat.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis
-                        dataKey="date"
-                        fontSize={12}
-                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                      />
-                      <YAxis
-                        fontSize={12}
-                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                        label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="weight"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={3}
-                        dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <WeightHistoryChart 
+            records={weightHistory} 
+            goatName={selectedGoat.name}
+          />
 
           {/* Weight Records Table */}
           <Card className="shadow-card">
@@ -308,6 +315,13 @@ export function WeightTracking() {
                             <div className="text-lg font-semibold">
                               {record.weight} kg
                             </div>
+                            <Badge variant={record.method === 'actual' ? 'default' : 'secondary'}>
+                              {record.method === 'actual' ? (
+                                <><Scale className="h-3 w-3 mr-1" /> Actual</>
+                              ) : (
+                                <><Calculator className="h-3 w-3 mr-1" /> Estimated</>
+                              )}
+                            </Badge>
                             {isLatest && (
                               <Badge variant="default" className="text-xs">Latest</Badge>
                             )}
@@ -315,6 +329,11 @@ export function WeightTracking() {
                           <div className="text-sm text-muted-foreground">
                             {formatDate(record.date)}
                           </div>
+                          {record.method === 'estimated' && record.chestGirth && record.bodyLength && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Girth: {record.chestGirth}cm, Length: {record.bodyLength}cm
+                            </div>
+                          )}
                           {record.notes && (
                             <div className="text-sm text-muted-foreground mt-1">
                               {record.notes}
@@ -373,102 +392,26 @@ export function WeightTracking() {
       {/* Edit Dialog */}
       {editingRecord && (
         <Dialog open={!!editingRecord} onOpenChange={() => setEditingRecord(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Add Weight Records</DialogTitle>
+              <DialogTitle>Edit Weight Record</DialogTitle>
             </DialogHeader>
-            <WeightForm
-              onSubmit={handleAddWeight}
-              goats={activeGoats}
-              isMultiple={true}
+            <WeightInputForm
+              onSubmit={handleUpdateWeight}
+              onCancel={() => setEditingRecord(null)}
+              initialData={{
+                date: editingRecord.date,
+                method: editingRecord.method,
+                weight: editingRecord.weight,
+                chestGirth: editingRecord.chestGirth,
+                bodyLength: editingRecord.bodyLength,
+                notes: editingRecord.notes || ''
+              }}
+              goatName={selectedGoat?.name}
             />
           </DialogContent>
         </Dialog>
       )}
     </div>
   );
-}
-
-// First, modify the WeightForm interface to include a new prop
-interface WeightFormProps {
-  onSubmit: (formData: FormData) => void;
-  goats: any[];
-  initialData?: any;
-  isEditing?: boolean;
-  isMultiple?: boolean; // Add this new prop
-}
-
-// Then replace the existing WeightForm component with this updated version
-function WeightForm({ onSubmit, goats, initialData, isEditing = false, isMultiple = false }: WeightFormProps) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    onSubmit(formData);
-  };
-
-  if (isMultiple) {
-    return (
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="date">Date *</Label>
-          <Input
-            id="date"
-            name="date"
-            type="date"
-            defaultValue={new Date().toISOString().split('T')[0]}
-            required
-          />
-        </div>
-
-        <div className="border rounded-lg">
-          <table className="w-full">
-            <thead className="bg-secondary">
-              <tr>
-                <th className="px-4 py-2 text-left">Goat</th>
-                <th className="px-4 py-2 text-left">Weight (kg)</th>
-                <th className="px-4 py-2 text-left">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {goats.map((goat) => (
-                <tr key={goat.id} className="border-t">
-                  <td className="px-4 py-2">
-                    <input type="hidden" name={`goatId-${goat.id}`} value={goat.id} />
-                    <div>
-                      <div className="font-medium">{goat.name}</div>
-                      <div className="text-sm text-muted-foreground">Tag #{goat.tagNumber}</div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">
-                    <Input
-                      name={`weight-${goat.id}`}
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      placeholder="0.0"
-                      className="w-24"
-                    />
-                  </td>
-                  <td className="px-4 py-2">
-                    <Input
-                      name={`notes-${goat.id}`}
-                      type="text"
-                      placeholder="Optional notes"
-                      className="w-full"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button type="submit" className="bg-gradient-primary">
-            Add Weight Records
-          </Button>
-        </div>
-      </form>
-    );
-  }
 }

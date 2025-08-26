@@ -1,28 +1,21 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Weight, Plus, Edit, Trash, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Weight, Plus, Edit, Trash, Scale, Calculator, Clock } from 'lucide-react';
 import { Goat, WeightRecord } from '@/types/goat';
 import { useToast } from '@/hooks/use-toast';
+import { WeightInputForm, WeightFormData } from '@/components/weight/WeightInputForm';
+import { WeightHistoryChart } from '@/components/weight/WeightHistoryChart';
 
 interface InteractiveWeightTabProps {
   goat: Goat;
   weightRecords: WeightRecord[];
-  onAddWeight?: (goatId: string, data: { date: Date; weight: number; notes?: string }) => void;
-  onUpdateWeight?: (recordId: string, data: { date: Date; weight: number; notes?: string }) => void;
+  onAddWeight?: (goatId: string, data: WeightFormData) => void;
+  onUpdateWeight?: (recordId: string, data: WeightFormData) => void;
   onDeleteWeight?: (recordId: string) => void;
-}
-
-interface WeightFormData {
-  date: string;
-  weight: string;
-  notes: string;
 }
 
 export function InteractiveWeightTab({ 
@@ -35,86 +28,34 @@ export function InteractiveWeightTab({
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<WeightRecord | null>(null);
-  const [formData, setFormData] = useState<WeightFormData>({
-    date: new Date().toISOString().split('T')[0],
-    weight: '',
-    notes: ''
-  });
 
   const sortedRecords = [...weightRecords].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const latestRecord = sortedRecords[sortedRecords.length - 1];
 
-  const chartData = sortedRecords.map(record => ({
-    date: new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    weight: record.weight,
-    originalDate: record.date
-  }));
-
-  const getTrendIcon = (currentWeight: number, previousWeight: number) => {
-    if (currentWeight > previousWeight) return TrendingUp;
-    if (currentWeight < previousWeight) return TrendingDown;
-    return Minus;
-  };
-
-  const getTrendColor = (currentWeight: number, previousWeight: number) => {
-    if (currentWeight > previousWeight) return 'text-green-600';
-    if (currentWeight < previousWeight) return 'text-red-600';
-    return 'text-gray-600';
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const weight = parseFloat(formData.weight);
-    if (isNaN(weight) || weight <= 0) {
-      toast({
-        title: "Invalid weight",
-        description: "Please enter a valid weight",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const data = {
-      date: new Date(formData.date),
-      weight,
-      notes: formData.notes || undefined
-    };
-
-    if (editingRecord) {
-      onUpdateWeight?.(editingRecord.id, data);
-      setEditingRecord(null);
-      toast({
-        title: "Weight record updated",
-        description: "The weight record has been successfully updated."
-      });
-    } else {
-      onAddWeight?.(goat.id, data);
-      setIsAddDialogOpen(false);
-      toast({
-        title: "Weight record added",
-        description: "New weight record has been added successfully."
-      });
-    }
-
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      weight: '',
-      notes: ''
+  const handleAddWeight = (data: WeightFormData) => {
+    if (!onAddWeight) return;
+    onAddWeight(goat.id, data);
+    setIsAddDialogOpen(false);
+    toast({
+      title: "Weight record added",
+      description: `Recorded ${data.weight}kg for ${goat.name} using ${data.method} measurement.`
     });
   };
 
-  const handleEdit = (record: WeightRecord) => {
-    setEditingRecord(record);
-    setFormData({
-      date: new Date(record.date).toISOString().split('T')[0],
-      weight: record.weight.toString(),
-      notes: record.notes || ''
+  const handleUpdateWeight = (data: WeightFormData) => {
+    if (!editingRecord || !onUpdateWeight) return;
+    onUpdateWeight(editingRecord.id, data);
+    setEditingRecord(null);
+    toast({
+      title: "Weight record updated",
+      description: "The weight record has been successfully updated."
     });
   };
 
-  const handleDelete = (record: WeightRecord) => {
+  const handleDeleteWeight = (record: WeightRecord) => {
+    if (!onDeleteWeight) return;
     if (window.confirm('Are you sure you want to delete this weight record?')) {
-      onDeleteWeight?.(record.id);
+      onDeleteWeight(record.id);
       toast({
         title: "Weight record deleted",
         description: "The weight record has been deleted."
@@ -122,198 +63,189 @@ export function InteractiveWeightTab({
     }
   };
 
-  const WeightForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            type="date"
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="weight">Weight (kg)</Label>
-          <Input
-            id="weight"
-            type="number"
-            step="0.1"
-            value={formData.weight}
-            onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-            placeholder="0.0"
-            required
-          />
-        </div>
-      </div>
-      <div>
-        <Label htmlFor="notes">Notes (optional)</Label>
-        <Textarea
-          id="notes"
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          placeholder="Any additional notes..."
-          rows={3}
-        />
-      </div>
-      <div className="flex justify-end space-x-2">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={() => {
-            setIsAddDialogOpen(false);
-            setEditingRecord(null);
-            setFormData({
-              date: new Date().toISOString().split('T')[0],
-              weight: '',
-              notes: ''
-            });
-          }}
-        >
-          Cancel
-        </Button>
-        <Button type="submit">
-          {editingRecord ? 'Update' : 'Add'} Weight
-        </Button>
-      </div>
-    </form>
-  );
-
   return (
     <div className="space-y-6">
-      {/* Header with Add Button */}
+      {/* Header with Current Weight Summary */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Weight Tracking - {goat.name}</h3>
           <p className="text-sm text-muted-foreground">#{goat.tagNumber}</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Weight
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Weight Record</DialogTitle>
-            </DialogHeader>
-            <WeightForm />
-          </DialogContent>
-        </Dialog>
+        
+        {onAddWeight && (
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-primary">
+                <Plus className="h-4 w-4 mr-2" />
+                Record Weight
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Record Weight - {goat.name}</DialogTitle>
+              </DialogHeader>
+              <WeightInputForm 
+                onSubmit={handleAddWeight}
+                onCancel={() => setIsAddDialogOpen(false)}
+                goatName={goat.name}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
-      {/* Weight Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Weight className="h-5 w-5" />
-            <span>Weight Growth Chart</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {chartData.length >= 2 ? (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip 
-                    formatter={(value: number) => [`${value} kg`, 'Weight']}
-                    labelFormatter={(label) => `Date: ${label}`}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="weight" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2} 
-                    dot={{ fill: 'hsl(var(--primary))' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+      {/* Current Weight Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="shadow-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Current Weight</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {latestRecord ? `${latestRecord.weight} kg` : 'No data'}
+                </p>
+                {latestRecord && (
+                  <div className="flex items-center space-x-2 mt-1">
+                    {latestRecord.method === 'actual' ? (
+                      <Scale className="h-3 w-3 text-primary" />
+                    ) : (
+                      <Calculator className="h-3 w-3 text-accent" />
+                    )}
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {latestRecord.method}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <Weight className="h-8 w-8 text-primary" />
             </div>
-          ) : (
-            <div className="h-64 flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <Weight className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Add at least 2 weight records to see the growth chart</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {latestRecord 
+                    ? new Date(latestRecord.date).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })
+                    : '--'
+                  }
+                </p>
+                {latestRecord && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Math.floor((Date.now() - new Date(latestRecord.date).getTime()) / (1000 * 60 * 60 * 24))} days ago
+                  </p>
+                )}
+              </div>
+              <Clock className="h-8 w-8 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Records</p>
+                <p className="text-2xl font-bold text-foreground">{sortedRecords.length}</p>
+                <div className="flex items-center space-x-2 mt-1">
+                  <Badge variant="outline" className="text-xs">
+                    {sortedRecords.filter(r => r.method === 'actual').length} actual
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {sortedRecords.filter(r => r.method === 'estimated').length} estimated
+                  </Badge>
+                </div>
+              </div>
+              <div className="h-8 w-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">#</span>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Weight History Chart */}
+      <WeightHistoryChart 
+        records={sortedRecords} 
+        goatName={goat.name}
+      />
 
       {/* Weight Records List */}
       <Card>
         <CardHeader>
-          <CardTitle>Weight History</CardTitle>
+          <CardTitle>Weight History Log</CardTitle>
         </CardHeader>
         <CardContent>
           {sortedRecords.length > 0 ? (
             <div className="space-y-4">
-              {sortedRecords.reverse().map((record, index) => {
-                const previousRecord = sortedRecords[index + 1];
-                const hasChange = previousRecord && record.weight !== previousRecord.weight;
-                const weightChange = previousRecord ? record.weight - previousRecord.weight : 0;
-                const TrendIcon = previousRecord ? getTrendIcon(record.weight, previousRecord.weight) : null;
-                const trendColor = previousRecord ? getTrendColor(record.weight, previousRecord.weight) : '';
-
-                return (
-                  <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-4">
-                        <div>
-                          <p className="font-semibold">{record.weight} kg</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(record.date).toLocaleDateString()}
-                          </p>
+              {sortedRecords.reverse().map((record) => (
+                <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <p className="font-semibold text-lg">{record.weight} kg</p>
+                          <Badge variant={record.method === 'actual' ? 'default' : 'secondary'}>
+                            {record.method === 'actual' ? (
+                              <><Scale className="h-3 w-3 mr-1" /> Actual</>
+                            ) : (
+                              <><Calculator className="h-3 w-3 mr-1" /> Estimated</>
+                            )}
+                          </Badge>
                         </div>
-                        
-                        {hasChange && TrendIcon && (
-                          <div className={`flex items-center space-x-1 ${trendColor}`}>
-                            <TrendIcon className="h-4 w-4" />
-                            <span className="text-sm font-medium">
-                              {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
-                            </span>
-                          </div>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(record.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                        {record.method === 'estimated' && record.chestGirth && record.bodyLength && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Girth: {record.chestGirth}cm, Length: {record.bodyLength}cm
+                          </p>
                         )}
                       </div>
-                      
-                      {record.notes && (
-                        <p className="text-sm text-muted-foreground mt-2 italic">
-                          "{record.notes}"
-                        </p>
-                      )}
                     </div>
                     
-                    {(onUpdateWeight || onDeleteWeight) && (
-                      <div className="flex space-x-2">
-                        {onUpdateWeight && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(record)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {onDeleteWeight && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(record)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                    {record.notes && (
+                      <p className="text-sm text-muted-foreground mt-2 italic">
+                        "{record.notes}"
+                      </p>
                     )}
                   </div>
-                );
-              })}
+                  
+                  {(onUpdateWeight || onDeleteWeight) && (
+                    <div className="flex space-x-2">
+                      {onUpdateWeight && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingRecord(record)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {onDeleteWeight && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteWeight(record)}
+                          className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
@@ -326,14 +258,28 @@ export function InteractiveWeightTab({
       </Card>
 
       {/* Edit Weight Dialog */}
-      <Dialog open={!!editingRecord} onOpenChange={(open) => !open && setEditingRecord(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Weight Record</DialogTitle>
-          </DialogHeader>
-          <WeightForm />
-        </DialogContent>
-      </Dialog>
+      {editingRecord && onUpdateWeight && (
+        <Dialog open={!!editingRecord} onOpenChange={() => setEditingRecord(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Weight Record - {goat.name}</DialogTitle>
+            </DialogHeader>
+            <WeightInputForm 
+              onSubmit={handleUpdateWeight}
+              onCancel={() => setEditingRecord(null)}
+              initialData={{
+                date: editingRecord.date,
+                method: editingRecord.method,
+                weight: editingRecord.weight,
+                chestGirth: editingRecord.chestGirth,
+                bodyLength: editingRecord.bodyLength,
+                notes: editingRecord.notes || ''
+              }}
+              goatName={goat.name}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
