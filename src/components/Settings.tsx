@@ -8,20 +8,10 @@ import { useTheme } from '@/context/ThemeContext';
 import { Monitor, Moon, Sun, Palette, Database, Shield } from 'lucide-react';
 import { DataManagement } from '@/components/DataManagement';
 import { BackupManager } from '@/components/BackupManager';
-
-const accentColors = [
-  { value: 'sage', label: 'Sage Green', color: 'hsl(120, 25%, 35%)' },
-  { value: 'blue', label: 'Blue', color: 'hsl(221, 83%, 53%)' },
-  { value: 'green', label: 'Green', color: 'hsl(142, 76%, 36%)' },
-  { value: 'orange', label: 'Orange', color: 'hsl(25, 95%, 53%)' },
-  { value: 'purple', label: 'Purple', color: 'hsl(262, 83%, 58%)' },
-  { value: 'pink', label: 'Pink', color: 'hsl(330, 81%, 60%)' },
-  { value: 'red', label: 'Red', color: 'hsl(0, 84%, 60%)' },
-  { value: 'yellow', label: 'Yellow', color: 'hsl(48, 96%, 53%)' }
-];
+import { AccentColorPicker } from '@/components/AccentColorPicker';
 
 export default function Settings() {
-  const { theme, setTheme, accentColor, setAccentColor } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="space-y-6">
@@ -40,88 +30,97 @@ export default function Settings() {
         </TabsList>
 
         <TabsContent value="appearance" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Theme Settings */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Theme Mode Settings */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Monitor className="h-5 w-5" />
-                  Theme
+                  Theme Mode
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label>Appearance</Label>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button
                       variant={theme === 'light' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setTheme('light')}
-                      className="flex-1"
+                      className="flex flex-col items-center space-y-1 h-16"
                     >
-                      <Sun className="h-4 w-4 mr-2" />
-                      Light
+                      <Sun className="h-5 w-5" />
+                      <span className="text-xs">Light</span>
                     </Button>
                     <Button
                       variant={theme === 'dark' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setTheme('dark')}
-                      className="flex-1"
+                      className="flex flex-col items-center space-y-1 h-16"
                     >
-                      <Moon className="h-4 w-4 mr-2" />
-                      Dark
+                      <Moon className="h-5 w-5" />
+                      <span className="text-xs">Dark</span>
                     </Button>
                     <Button
                       variant={theme === 'system' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setTheme('system')}
-                      className="flex-1"
+                      className="flex flex-col items-center space-y-1 h-16"
                     >
-                      <Monitor className="h-4 w-4 mr-2" />
-                      System
+                      <Monitor className="h-5 w-5" />
+                      <span className="text-xs">System</span>
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Accent Color Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Accent Color
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Primary Color</Label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {accentColors.map((color) => (
-                      <Button
-                        key={color.value}
-                        variant={accentColor === color.value ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setAccentColor(color.value as any)}
-                        className="h-10 p-0"
-                        style={{
-                          backgroundColor: accentColor === color.value ? color.color : undefined
-                        }}
-                      >
-                        <div
-                          className="w-4 h-4 rounded-full border"
-                          style={{ backgroundColor: color.color }}
-                        />
-                      </Button>
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Current: {accentColors.find(c => c.value === accentColor)?.label}
+                  <p className="text-xs text-muted-foreground">
+                    Choose your preferred theme mode. System will automatically match your device settings.
                   </p>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Accent Color Picker */}
+            <AccentColorPicker />
           </div>
+
+          {/* Theme Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Theme Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Primary Elements */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Primary Elements</Label>
+                  <div className="space-y-2">
+                    <Button size="sm" className="w-full">Primary Button</Button>
+                    <Button size="sm" variant="outline" className="w-full">Outline Button</Button>
+                    <Button size="sm" variant="secondary" className="w-full">Secondary Button</Button>
+                  </div>
+                </div>
+
+                {/* Cards & Surfaces */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Cards & Surfaces</Label>
+                  <Card className="p-3">
+                    <p className="text-sm">This is a sample card with the current theme applied.</p>
+                  </Card>
+                </div>
+
+                {/* Accent Usage */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Accent Usage</Label>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-primary rounded-full"></div>
+                    <div className="h-3 bg-primary/80 rounded-full"></div>
+                    <div className="h-3 bg-primary/60 rounded-full"></div>
+                    <div className="h-3 bg-primary/40 rounded-full"></div>
+                    <div className="h-3 bg-primary/20 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="data">

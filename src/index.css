@@ -17,6 +17,7 @@
     --primary-ghost: 120 25% 35% / 0.1;
     --primary-ghost-hover: 120 25% 35% / 0.2;
     --primary-muted: 120 12% 35% / 0.5;
+    --primary-subtle: 120 8% 95%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
@@ -51,6 +52,7 @@
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(120 25% 35%) 0%, hsl(120 25% 45%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(120 25% 35%) 0%, hsl(120 25% 30%) 50%, hsl(120 25% 25%) 100%);
     --gradient-warm: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(45 93% 47%) 100%);
     --gradient-earth: linear-gradient(135deg, hsl(35 90% 68%) 0%, hsl(25 95% 53%) 100%);
     
@@ -58,6 +60,8 @@
     --shadow-soft: 0 2px 8px -2px hsl(120 25% 35% / 0.1);
     --shadow-card: 0 4px 12px -4px hsl(120 25% 35% / 0.15);
     --shadow-glow: 0 0 0 1px hsl(120 25% 35% / 0.05), 0 2px 4px hsl(120 25% 35% / 0.1);
+    --shadow-accent: 0 4px 12px -4px hsl(120 25% 35% / 0.25);
+    --shadow-accent-strong: 0 8px 25px -5px hsl(120 25% 35% / 0.35);
     
     /* Glow effects */
     --primary-glow: 0 0 20px hsl(120 25% 35%);
@@ -77,6 +81,7 @@
     --primary-ghost: 120 25% 35% / 0.1;
     --primary-ghost-hover: 120 25% 35% / 0.2;
     --primary-muted: 120 12% 35% / 0.5;
+    --primary-subtle: 120 8% 15%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
@@ -110,6 +115,7 @@
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(120 25% 35%) 0%, hsl(120 25% 45%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(120 25% 35%) 0%, hsl(120 25% 30%) 50%, hsl(120 25% 25%) 100%);
     --gradient-warm: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(45 93% 47%) 100%);
     --gradient-earth: linear-gradient(135deg, hsl(35 90% 68%) 0%, hsl(25 95% 53%) 100%);
     
@@ -117,6 +123,8 @@
     --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
     --shadow-card: 0 4px 12px -4px hsl(0 0% 0% / 0.4);
     --shadow-glow: 0 0 0 1px hsl(120 25% 35% / 0.1), 0 2px 4px hsl(0 0% 0% / 0.3);
+    --shadow-accent: 0 4px 12px -4px hsl(120 25% 35% / 0.4);
+    --shadow-accent-strong: 0 8px 25px -5px hsl(120 25% 35% / 0.5);
     
     /* Glow effects */
     --primary-glow: 0 0 20px hsl(120 25% 35%);
@@ -130,6 +138,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
@@ -140,5 +149,21 @@
   
   .hover-scale {
     @apply transition-transform duration-200 hover:scale-105;
+  }
+  
+  .accent-glow {
+    box-shadow: var(--shadow-accent);
+  }
+  
+  .accent-glow-strong {
+    box-shadow: var(--shadow-accent-strong);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .gradient-primary {
+    background: var(--gradient-primary);
   }
 }

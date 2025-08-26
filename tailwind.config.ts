@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -27,6 +28,11 @@ export default {
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
+					hover: 'hsl(var(--primary-hover))',
+					ghost: 'hsl(var(--primary-ghost))',
+					'ghost-hover': 'hsl(var(--primary-ghost-hover))',
+					muted: 'hsl(var(--primary-muted))',
+					subtle: 'hsl(var(--primary-subtle))',
 					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
@@ -74,13 +80,16 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-accent': 'var(--gradient-accent)',
 				'gradient-warm': 'var(--gradient-warm)',
 				'gradient-earth': 'var(--gradient-earth)'
 			},
 			boxShadow: {
 				'soft': 'var(--shadow-soft)',
 				'card': 'var(--shadow-card)',
-				'glow': 'var(--shadow-glow)'
+				'glow': 'var(--shadow-glow)',
+				'accent': 'var(--shadow-accent)',
+				'accent-strong': 'var(--shadow-accent-strong)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -121,13 +130,22 @@ export default {
 					'100%': {
 						transform: 'translateX(0)'
 					}
+				},
+				'glow-pulse': {
+					'0%, 100%': {
+						boxShadow: 'var(--shadow-accent)'
+					},
+					'50%': {
+						boxShadow: 'var(--shadow-accent-strong)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out',
-				'slide-in': 'slide-in 0.3s ease-out'
+				'slide-in': 'slide-in 0.3s ease-out',
+				'glow-pulse': 'glow-pulse 2s ease-in-out infinite'
 			}
 		}
 	},

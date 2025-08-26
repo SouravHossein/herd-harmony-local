@@ -1,162 +1,205 @@
 
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  Crown, 
   Heart, 
-  Activity, 
+  User, 
   Calendar, 
-  Star,
-  AlertTriangle,
-  Info
+  Weight, 
+  Star, 
+  Eye,
+  Baby,
+  Activity,
+  AlertCircle
 } from 'lucide-react';
 import { Goat } from '@/types/goat';
-import { useImageStorage } from '@/hooks/useImageStorage';
+import { formatDate, calculateAge } from '@/lib/utils';
 
 interface PedigreeGoatCardProps {
   goat: Goat;
-  level: number;
-  isFocused?: boolean;
-  onClick?: () => void;
-  isFoundation?: boolean;
+  onViewDetails: (goat: Goat) => void;
+  onSelectAsParent?: (goat: Goat) => void;
+  showSelectButton?: boolean;
+  compact?: boolean;
 }
 
-export default function PedigreeGoatCard({ 
+export function PedigreeGoatCard({ 
   goat, 
-  level, 
-  isFocused = false, 
-  onClick,
-  isFoundation = false 
+  onViewDetails, 
+  onSelectAsParent, 
+  showSelectButton = false,
+  compact = false 
 }: PedigreeGoatCardProps) {
-  const { getImage } = useImageStorage();
-  const [imageUrl, setImageUrl] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (goat.imageId) {
-      getImage(goat.imageId).then(url => {
-        if (url) setImageUrl(url);
-      }).catch(() => {
-        setImageUrl(null);
-      });
-    }
-  }, [goat.imageId, getImage]);
-
-  const calculateAge = (birthDate: Date): string => {
-    const now = new Date();
-    const ageMs = now.getTime() - (new Date(birthDate)).getTime();
-    const ageMonths = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 30.44));
-    
-    if (ageMonths >= 12) {
-      const years = Math.floor(ageMonths / 12);
-      return `${years}y`;
-    }
-    return `${ageMonths}m`;
+  const age = calculateAge(goat.dateOfBirth);
+  
+  const getGenderIcon = (gender: string) => {
+    return gender === 'female' ? 
+      <Heart className="h-4 w-4 text-pink-500" /> : 
+      <User className="h-4 w-4 text-blue-500" />;
   };
 
-  const getGenerationLabel = (level: number) => {
-    if (level === 0) return isFoundation ? 'Foundation' : 'F0';
-    return `F${level}`;
+  const getGenderColor = (gender: string) => {
+    return gender === 'female' ? 'border-pink-200 bg-pink-50' : 'border-blue-200 bg-blue-50';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'sold': return 'bg-blue-100 text-blue-800';
-      case 'deceased': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getBreedingStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pregnant': return <Heart className="h-3 w-3 text-pink-500" />;
-      case 'lactating': return <Activity className="h-3 w-3 text-blue-500" />;
-      case 'active': return <Star className="h-3 w-3 text-green-500" />;
-      default: return null;
-    }
-  };
-
-  return (
-    <Card 
-      className={`
-        transition-all duration-200 cursor-pointer hover:shadow-md
-        ${isFocused ? 'ring-2 ring-primary shadow-lg' : ''}
-        ${isFoundation ? 'border-primary border-2' : ''}
-        ${level === 0 ? 'bg-gradient-to-r from-primary/5 to-primary/10' : ''}
-      `}
-      onClick={onClick}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between space-x-3">
-          {/* Goat Image */}
-          <div className="flex-shrink-0">
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={goat.name}
-                className="w-12 h-12 object-cover rounded-full border-2 border-background shadow-sm"
-              />
-            ) : (
-              <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                {goat.gender === 'female' ? (
-                  <Heart className="h-6 w-6 text-muted-foreground" />
-                ) : (
-                  <Crown className="h-6 w-6 text-muted-foreground" />
-                )}
+  if (compact) {
+    return (
+      <Card className={`hover:shadow-md transition-shadow cursor-pointer ${getGenderColor(goat.gender)}`}>
+        <CardContent className="p-3">
+          <div className="flex items-center space-x-2">
+            <Avatar className="h-8 w-8">
+              {goat.mediaFiles?.find(m => m.type === 'image') ? (
+                <AvatarImage 
+                  src={goat.mediaFiles.find(m => m.type === 'image')!.url} 
+                  alt={goat.name} 
+                />
+              ) : (
+                <AvatarFallback>
+                  {getGenderIcon(goat.gender)}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2">
+                <h4 className="font-medium text-sm truncate">{goat.name}</h4>
+                {goat.isFavorite && <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />}
               </div>
-            )}
-          </div>
-
-          {/* Goat Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 mb-1">
-              <h4 className="font-semibold text-sm truncate">{goat.name}</h4>
-              {goat.isFavorite && <Star className="h-3 w-3 fill-primary text-primary" />}
-              {isFoundation && <Crown className="h-3 w-3 text-primary" />}
+              <p className="text-xs text-muted-foreground">#{goat.tagNumber}</p>
             </div>
             
-            <div className="flex items-center space-x-2 mb-2">
-              <Badge variant="outline" className="text-xs">
-                #{goat.tagNumber}
-              </Badge>
-              <Badge variant={goat.gender === 'male' ? 'default' : 'secondary'} className="text-xs">
-                {goat.gender === 'male' ? '♂' : '♀'}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {getGenerationLabel(level)}
-              </Badge>
-            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails(goat);
+              }}
+            >
+              <Eye className="h-3 w-3" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-              <div className="flex items-center space-x-1">
-                <Calendar className="h-3 w-3" />
-                <span>{calculateAge(goat.dateOfBirth)}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                {getBreedingStatusIcon(goat.breedingStatus)}
-                <span className="truncate">{goat.breedingStatus}</span>
+  return (
+    <Card className={`hover:shadow-lg transition-all duration-200 ${getGenderColor(goat.gender)}`}>
+      <CardContent className="p-4">
+        <div className="space-y-4">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-12 w-12">
+                {goat.mediaFiles?.find(m => m.type === 'image') ? (
+                  <AvatarImage 
+                    src={goat.mediaFiles.find(m => m.type === 'image')!.url} 
+                    alt={goat.name} 
+                  />
+                ) : (
+                  <AvatarFallback>
+                    {getGenderIcon(goat.gender)}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-semibold">{goat.name}</h3>
+                  {goat.isFavorite && (
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">#{goat.tagNumber}</p>
+                {goat.nickname && (
+                  <p className="text-sm italic text-muted-foreground">"{goat.nickname}"</p>
+                )}
               </div>
             </div>
-
-            <div className="mt-2 flex items-center justify-between">
-              <Badge className={`text-xs ${getStatusColor(goat.status)}`}>
-                {goat.status}
+            
+            <div className="flex flex-col items-end space-y-1">
+              <Badge variant={goat.gender === 'female' ? 'default' : 'secondary'}>
+                <span className="flex items-center space-x-1">
+                  {getGenderIcon(goat.gender)}
+                  <span className="capitalize">{goat.gender}</span>
+                </span>
               </Badge>
-              <span className="text-xs text-muted-foreground truncate">
-                {goat.breed}
+              
+              {goat.isActive === false && (
+                <Badge variant="outline" className="text-xs">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Inactive
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span>{age}</span>
+            </div>
+            
+            {goat.currentWeight && (
+              <div className="flex items-center space-x-2">
+                <Weight className="h-4 w-4 text-muted-foreground" />
+                <span>{goat.currentWeight} kg</span>
+              </div>
+            )}
+            
+            <div className="flex items-center space-x-2">
+              <Baby className="h-4 w-4 text-muted-foreground" />
+              <span>{goat.breed}</span>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <span className={goat.isActive !== false ? 'text-green-600' : 'text-gray-500'}>
+                {goat.isActive !== false ? 'Active' : 'Inactive'}
               </span>
             </div>
           </div>
 
-          {/* Action Icons */}
-          <div className="flex flex-col space-y-1">
-            {goat.notes && (
-              <Info className="h-3 w-3 text-muted-foreground" title="Has notes" />
-            )}
-            {goat.currentWeight && goat.currentWeight < 20 && (
-              <AlertTriangle className="h-3 w-3 text-yellow-500" title="Low weight" />
+          {/* Family Info */}
+          {(goat.motherId || goat.fatherId) && (
+            <div className="pt-2 border-t">
+              <h4 className="text-sm font-medium mb-2">Family</h4>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                {goat.motherId && (
+                  <p>Mother: ID {goat.motherId}</p>
+                )}
+                {goat.fatherId && (
+                  <p>Father: ID {goat.fatherId}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex space-x-2 pt-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => onViewDetails(goat)}
+              className="flex-1"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
+            </Button>
+            
+            {showSelectButton && onSelectAsParent && (
+              <Button 
+                size="sm" 
+                onClick={() => onSelectAsParent(goat)}
+                className="flex-1"
+              >
+                Select as Parent
+              </Button>
             )}
           </div>
         </div>
