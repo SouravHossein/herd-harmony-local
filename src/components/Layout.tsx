@@ -31,15 +31,14 @@ interface LayoutProps {
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'weight', label: 'Weight', icon: Scale },
   { id: 'goats', label: 'Goats', icon: Users },
-  { id: 'health', label: 'Health', icon: Heart },
-  { id: 'breeding', label: 'Breeding', icon: Baby },
   { id: 'pedigree', label: 'Pedigree', icon: GitBranch },
-  { id: 'finance', label: 'Finance', icon: DollarSign },
-  { id: 'feed', label: 'Feed', icon: Wheat },
-  { id: 'weather', label: 'Weather', icon: CloudSun },
+  { id: 'weight', label: 'Weight', icon: Scale },
+  { id: 'breeding', label: 'Breeding', icon: Baby },
   { id: 'health-ai', label: 'Health AI', icon: Activity },
+  { id: 'feed', label: 'Feed', icon: Wheat },
+  { id: 'finance', label: 'Finance', icon: DollarSign },
+  { id: 'weather', label: 'Weather', icon: CloudSun },
   { id: 'growth-optimizer', label: 'Growth', icon: TrendingUp },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];

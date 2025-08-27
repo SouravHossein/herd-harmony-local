@@ -134,8 +134,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
   };
 
   const breeds = [
-    'Nubian', 'Alpine', 'Saanen', 'LaMancha', 'Oberhasli', 
-    'Toggenburg', 'Nigerian Dwarf', 'Boer', 'Angus', 'Kiko', 'Other'
+    "Black Bengal","TotaPuri","Cross","Sirohi","Beetal","Barbari",'Deshi', 'Jamuna Pari', 'Saanen', 'Other',
   ];
 
   const mediaConfig = {
@@ -244,7 +243,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="sold">Sold</SelectItem>
-                      <SelectItem value="deceased">Deceased</SelectItem>
+                      <SelectItem value="deceased">Deceased(মৃত)</SelectItem>
                       <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
                   </Select>

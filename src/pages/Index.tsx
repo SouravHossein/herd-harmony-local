@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import AllInOneDashboard from '@/components/AllInOneDashboard';
 // import  GoatManagement  from '@/components/GoatManagement';
-import { HealthDashboard } from '@/components/HealthDashboard';
 import { PedigreeWrapper } from '@/components/PedigreeWrapper';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
@@ -34,12 +33,10 @@ export default function Index() {
         return <UltraProductiveGoatManagement />;
       case 'weight':
         return <WeightTracking />;
-      case 'health':
-        return <HealthDashboard />;
-      case 'breeding':
-        return <BreedingPlanner />;
       case 'pedigree':
         return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
+      case 'breeding':
+        return <BreedingPlanner />;
       case 'finance':
         return <FinanceDashboard />;
       case 'feed':

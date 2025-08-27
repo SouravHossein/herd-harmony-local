@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import WeatherWidget from './WeatherWidget';
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Users, Heart, TrendingUp, Camera, Award, Bell } from 'lucide-react';
@@ -17,6 +17,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
+import { WeatherWidget } from './weather/WeatherWidget';
 
 ChartJS.register(
   CategoryScale,

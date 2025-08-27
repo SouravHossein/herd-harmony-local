@@ -35,13 +35,11 @@ export default function EnhancedParentSelector({
 
   const maleGoats = goats.filter(g => 
     g.gender === 'male' && 
-    g.status === 'active' && 
     g.id !== excludeGoatId
   );
   
   const femaleGoats = goats.filter(g => 
     g.gender === 'female' && 
-    g.status === 'active' && 
     g.id !== excludeGoatId
   );
 

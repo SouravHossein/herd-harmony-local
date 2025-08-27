@@ -38,13 +38,7 @@ export interface Goat {
   updatedAt: Date;
 }
 
-export interface WeightRecord {
-  id: string;
-  goatId: string;
-  date: Date;
-  weight: number; // in kg
-  notes?: string;
-}
+
 
 export interface HealthRecord {
   id: string;

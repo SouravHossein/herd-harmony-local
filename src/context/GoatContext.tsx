@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useGoatData as useElectronData } from '@/hooks/useDatabase';
 import { useGoatData as useLocalStorageData } from '@/hooks/useLocalStorageOnly';

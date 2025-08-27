@@ -67,6 +67,7 @@ const hexToHsl = (hex: string): string => {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
+  // eslint-disable-next-line prefer-const
   let h = 0, s = 0, l = (max + min) / 2;
 
   if (max !== min) {

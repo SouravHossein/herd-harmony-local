@@ -10,6 +10,7 @@ import { Users, Scale, Calculator, Save, RotateCcw } from 'lucide-react';
 import { Goat } from '@/types/goat';
 import { WeightFormData } from './WeightInputForm';
 import { calculateWeightFromTape } from '@/types/weight';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 interface MultiGoatWeightEntryProps {
   goats: Goat[];
@@ -40,7 +41,11 @@ interface GoatWeightRow {
 export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeightEntryProps) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [rows, setRows] = useState<Record<string, GoatWeightRow>>({});
+  const [unit, setUnit] = useState<"inch" | "cm">(localStorage.getItem("unit") as ("inch" | "cm"))
 
+  useEffect(() => {
+    localStorage.setItem("unit", unit)
+  }, [unit])
   // Initialize rows for each goat
   useEffect(() => {
     const initialRows: Record<string, GoatWeightRow> = {};
@@ -66,9 +71,10 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
       // Auto-calculate estimated weight
       if (updates.chestGirth !== undefined || updates.bodyLength !== undefined) {
         const row = newRows[goatId];
-        const girth = parseFloat(row.chestGirth);
-        const length = parseFloat(row.bodyLength);
-        
+        const girth = unit == "cm" ? parseFloat(row.chestGirth) : parseFloat(row.chestGirth) * 2.54;
+        const length = unit == "cm" ? parseFloat(row.bodyLength) : parseFloat(row.bodyLength) * 2.54;
+
+
         if (girth > 0 && length > 0) {
           row.estimatedWeight = calculateWeightFromTape(girth, length);
         } else {
@@ -82,15 +88,15 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
 
   const handleSave = () => {
     const entries: MultiGoatWeightData[] = [];
-    
+
     Object.values(rows).forEach(row => {
       const hasActualWeight = row.actualWeight && parseFloat(row.actualWeight) > 0;
       const hasEstimatedWeight = row.estimatedWeight > 0;
-      
+
       if (hasActualWeight || hasEstimatedWeight) {
         let weight: number;
         let method: 'actual' | 'estimated';
-        
+
         if (row.useEstimated && hasEstimatedWeight) {
           weight = row.estimatedWeight;
           method = 'estimated';
@@ -113,8 +119,9 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
         };
 
         if (method === 'estimated') {
-          entry.chestGirth = parseFloat(row.chestGirth);
-          entry.bodyLength = parseFloat(row.bodyLength);
+          entry.chestGirth =unit == "cm" ? parseFloat(row.chestGirth) : parseFloat(row.chestGirth) * 2.54;
+          entry.bodyLength =unit == "cm" ? parseFloat(row.bodyLength) : parseFloat(row.bodyLength) * 2.54;
+
         }
 
         entries.push(entry);
@@ -142,8 +149,8 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
     setRows(resetRows);
   };
 
-  const validEntries = Object.values(rows).filter(row => 
-    (row.actualWeight && parseFloat(row.actualWeight) > 0) || 
+  const validEntries = Object.values(rows).filter(row =>
+    (row.actualWeight && parseFloat(row.actualWeight) > 0) ||
     row.estimatedWeight > 0
   ).length;
 
@@ -158,7 +165,7 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
           <Badge variant="secondary">{validEntries} entries ready</Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         {/* Date Selection */}
         <div className="flex items-center space-x-4">
@@ -171,7 +178,23 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
             className="w-auto"
           />
         </div>
+        <div className='flex justify-end gap-2'>
 
+          <RadioGroup className='flex ' value={unit} onValueChange={(value: 'inch' | 'cm') => setUnit(value)}>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="inch" id="inch" />
+              <Label htmlFor="inch" className="flex items-center space-x-2 cursor-pointer">
+                <span>Inch</span>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="cm" id="cm" />
+              <Label htmlFor="cm" className="flex items-center space-x-2 cursor-pointer">
+                <span>Cm</span>
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
         {/* Table */}
         <div className="border rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
@@ -181,18 +204,18 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
                   <th className="text-left p-3 border-r">Goat</th>
                   <th className="text-center p-3 border-r min-w-[120px]">
                     <div className="flex items-center justify-center space-x-1">
-                      <Scale className="h-4 w-4" />
+                      <Scale size={20} />
                       <span>Actual Weight (kg)</span>
                     </div>
                   </th>
                   <th className="text-center p-3 border-r min-w-[100px]">
                     <div className="flex items-center justify-center space-x-1">
-                      <Calculator className="h-4 w-4" />
-                      <span>Girth (cm)</span>
+
+                      <span>Girth ({unit})</span>
                     </div>
                   </th>
-                  <th className="text-center p-3 border-r min-w-[100px]">Length (cm)</th>
-                  <th className="text-center p-3 border-r min-w-[120px]">Estimated Weight</th>
+                  <th className="text-center p-3 border-r min-w-[100px]">Length ({unit})</th>
+                  <th className="text-center p-3 border-r min-w-[120px] flex items-center justify-center"><Calculator size={20} />Estimated Weight</th>
                   <th className="text-left p-3 min-w-[150px]">Notes</th>
                 </tr>
               </thead>
@@ -215,9 +238,9 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
                           step="0.1"
                           min="0"
                           value={row.actualWeight}
-                          onChange={(e) => updateRow(goat.id, { 
+                          onChange={(e) => updateRow(goat.id, {
                             actualWeight: e.target.value,
-                            useEstimated: false 
+                            useEstimated: false
                           })}
                           placeholder="0.0"
                           className="text-center"
@@ -229,9 +252,9 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
                           step="0.1"
                           min="0"
                           value={row.chestGirth}
-                          onChange={(e) => updateRow(goat.id, { 
+                          onChange={(e) => updateRow(goat.id, {
                             chestGirth: e.target.value,
-                            useEstimated: true 
+                            useEstimated: true
                           })}
                           placeholder="0.0"
                           className="text-center"
@@ -243,9 +266,9 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
                           step="0.1"
                           min="0"
                           value={row.bodyLength}
-                          onChange={(e) => updateRow(goat.id, { 
+                          onChange={(e) => updateRow(goat.id, {
                             bodyLength: e.target.value,
-                            useEstimated: true 
+                            useEstimated: true
                           })}
                           placeholder="0.0"
                           className="text-center"
@@ -290,8 +313,8 @@ export function MultiGoatWeightEntry({ goats, onSave, onCancel }: MultiGoatWeigh
               </Button>
             )}
           </div>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={validEntries === 0}
             className="bg-gradient-primary"
           >

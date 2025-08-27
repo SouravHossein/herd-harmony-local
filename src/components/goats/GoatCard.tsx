@@ -39,7 +39,6 @@ export default function GoatCard({
 }: GoatCardProps) {
   const calculateAge = (birthDate: Date): string => {
     const now = new Date();
-    console.log('Calculating age for:', birthDate);
     const ageMs = now.getTime() - new Date(birthDate).getTime();
     const ageMonths = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 30.44));
     

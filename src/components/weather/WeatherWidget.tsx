@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,8 +38,6 @@ export function WeatherWidget() {
         const recommendations = weatherAI.generateRecommendations(data);
         const tasks = weatherAI.generateWeatherTasks(data, generatedAlerts);
         
-        console.log('Weather recommendations:', recommendations);
-        console.log('Weather tasks:', tasks);
       }
     } catch (error) {
       console.error('Error loading weather data:', error);

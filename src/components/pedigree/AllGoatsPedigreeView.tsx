@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Filter, Grid, List, Search, TreePine } from 'lucide-react';
 import { Goat } from '@/types/goat';
-import { PedigreeSearchFilter } from './PedigreeSearchFilter';
+import  PedigreeSearchFilter  from './PedigreeSearchFilter';
 import { PedigreeGoatCard } from './PedigreeGoatCard';
 
 interface AllGoatsPedigreeViewProps {
@@ -25,7 +25,7 @@ interface FilterCriteria {
   hasParentInfo: 'all' | 'complete' | 'partial' | 'none';
 }
 
-export function AllGoatsPedigreeView({ 
+export default function AllGoatsPedigreeView({ 
   goats, 
   onViewGoat, 
   onEditGoat, 
@@ -47,7 +47,7 @@ export function AllGoatsPedigreeView({
   
 
   const filteredGoats = useMemo(() => {
-    return goats.filter(goat => {
+    return goats?.filter(goat => {
       // Search term
       if (filters.searchTerm) {
         const searchLower = filters.searchTerm.toLowerCase();
@@ -112,12 +112,12 @@ export function AllGoatsPedigreeView({
   }, [goats, filters]);
 
   const breeds = useMemo(() => {
-    const uniqueBreeds = Array.from(new Set(goats.map(g => g.breed))).sort();
+    const uniqueBreeds = Array.from(new Set(goats?.map(g => g.breed))).sort();
     return uniqueBreeds;
   }, [goats]);
 
   const breedingStatuses = useMemo(() => {
-    const uniqueStatuses = Array.from(new Set(goats.map(g => g.breedingStatus))).sort();
+    const uniqueStatuses = Array.from(new Set(goats?.map(g => g.breedingStatus))).sort();
     return uniqueStatuses;
   }, [goats]);
 
@@ -170,14 +170,15 @@ export function AllGoatsPedigreeView({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-primary">{filteredGoats.length}</p>
+            <p className="text-2xl font-bold text-primary">{
+            filteredGoats?.length}</p>
             <p className="text-sm text-muted-foreground">Total Goats</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-primary">
-              {filteredGoats.filter(g => g.gender === 'female').length}
+              {filteredGoats?.filter(g => g.gender === 'female').length}
             </p>
             <p className="text-sm text-muted-foreground">Females</p>
           </CardContent>
@@ -185,7 +186,7 @@ export function AllGoatsPedigreeView({
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-primary">
-              {filteredGoats.filter(g => g.gender === 'male').length}
+              {filteredGoats?.filter(g => g.gender === 'male').length}
             </p>
             <p className="text-sm text-muted-foreground">Males</p>
           </CardContent>
@@ -193,7 +194,7 @@ export function AllGoatsPedigreeView({
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-primary">
-              {filteredGoats.filter(g => g.motherId && g.fatherId).length}
+              {filteredGoats?.filter(g => g.motherId && g.fatherId).length}
             </p>
             <p className="text-sm text-muted-foreground">Complete Lineage</p>
           </CardContent>
@@ -201,14 +202,24 @@ export function AllGoatsPedigreeView({
       </div>
 
       {/* Filters */}
-      {showFilters && (
+      {/* {showFilters && (
         <PedigreeSearchFilter
-          filters={filters}
-          onFiltersChange={setFilters}
+        generationFilter=''
+        onBreedChange={}
+        onGenderChange={}
+        onGenerationFilterChange={}
+        onSearchChange={}
+        searchTerm=''
+        selectedBreed=''
+        selectedGender=''
+        key={}
+
+          // filters={filters}
+          // onFiltersChange={setFilters}
           breeds={breeds}
-          breedingStatuses={breedingStatuses}
+          // breedingStatuses={breedingStatuses}
         />
-      )}
+      )} */}
 
       {/* Results */}
       <Card>
@@ -219,18 +230,18 @@ export function AllGoatsPedigreeView({
               <span>Herd Overview</span>
             </CardTitle>
             <Badge variant="secondary">
-              {filteredGoats.length} of {goats.length} goats
+              {filteredGoats?.length} of {goats?.length} goats
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
-          {filteredGoats.length > 0 ? (
+          {filteredGoats?.length > 0 ? (
             <div className={
               viewMode === 'grid' 
                 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' 
                 : 'space-y-4'
             }>
-              {filteredGoats.map(goat => (
+              {filteredGoats?.map(goat => (
                 <PedigreeGoatCard
                   key={goat.id}
                   goat={goat}

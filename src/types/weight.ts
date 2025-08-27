@@ -28,5 +28,5 @@ export const calculateWeightFromTape = (girthCm: number, lengthCm: number): numb
   const weightPounds = (girthInches * girthInches * lengthInches) / 660;
   
   // Convert pounds to kg
-  return Math.round((weightPounds * 0.453592) * 10) / 10;
+  return Math.round(weightPounds ) ;
 };

@@ -329,11 +329,6 @@ export function WeightTracking() {
                           <div className="text-sm text-muted-foreground">
                             {formatDate(record.date)}
                           </div>
-                          {record.method === 'estimated' && record.chestGirth && record.bodyLength && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Girth: {record.chestGirth}cm, Length: {record.bodyLength}cm
-                            </div>
-                          )}
                           {record.notes && (
                             <div className="text-sm text-muted-foreground mt-1">
                               {record.notes}

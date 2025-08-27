@@ -27,7 +27,7 @@ export interface WeightFormData {
 }
 
 export function WeightInputForm({ onSubmit, onCancel, initialData, goatName }: WeightInputFormProps) {
-  const [method, setMethod] = useState<'actual' | 'estimated'>(initialData?.method || 'actual');
+  const [method, setMethod] = useState<'actual' | 'estimated'>(localStorage.getItem("method") as ('actual' | 'estimated'));
   const [weight, setWeight] = useState(initialData?.weight?.toString() || '');
   const [chestGirth, setChestGirth] = useState(initialData?.chestGirth?.toString() || '');
   const [bodyLength, setBodyLength] = useState(initialData?.bodyLength?.toString() || '');
@@ -38,12 +38,20 @@ export function WeightInputForm({ onSubmit, onCancel, initialData, goatName }: W
       : new Date().toISOString().split('T')[0]
   );
   const [notes, setNotes] = useState(initialData?.notes || '');
+  const [unit, setUnit] = useState<"inch"|"cm">(localStorage.getItem("unit") as ("inch"|"cm"))
 
+  useEffect(()=>{
+    localStorage.setItem("unit",unit)
+  },[unit])
+  useEffect(()=>{
+    localStorage.setItem("method",method)
+  },[method])
   // Auto-calculate estimated weight when girth and length change
   useEffect(() => {
     if (method === 'estimated' && chestGirth && bodyLength) {
-      const girth = parseFloat(chestGirth);
-      const length = parseFloat(bodyLength);
+        const girth =unit=="cm"? parseFloat(chestGirth):parseFloat(chestGirth)*2.54;
+        const length =unit=="cm"? parseFloat(bodyLength):parseFloat(bodyLength)*2.54;
+  
       
       if (girth > 0 && length > 0) {
         const calculated = calculateWeightFromTape(girth, length);
@@ -51,7 +59,7 @@ export function WeightInputForm({ onSubmit, onCancel, initialData, goatName }: W
         setWeight(calculated.toString());
       }
     }
-  }, [chestGirth, bodyLength, method]);
+  }, [chestGirth, bodyLength, method,unit]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +128,7 @@ export function WeightInputForm({ onSubmit, onCancel, initialData, goatName }: W
               </div>
             </RadioGroup>
           </div>
-
+ 
           {/* Actual Weight Input */}
           {method === 'actual' && (
             <div className="space-y-2">
@@ -140,10 +148,27 @@ export function WeightInputForm({ onSubmit, onCancel, initialData, goatName }: W
 
           {/* Tape Measurement Inputs */}
           {method === 'estimated' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4"> 
+            <div className='flex justify-end gap-2'>
+
+            <RadioGroup className='flex ' value={unit} onValueChange={(value: 'inch' | 'cm') => setUnit(value)}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="inch" id="inch" />
+                <Label htmlFor="inch" className="flex items-center space-x-2 cursor-pointer">
+                  <span>Inch</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="cm" id="cm" />
+                <Label htmlFor="cm" className="flex items-center space-x-2 cursor-pointer">
+                  <span>Cm</span>
+                </Label>
+              </div>
+            </RadioGroup>
+            </div>
+                <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="girth">Chest Girth (cm)</Label>
+                  <Label htmlFor="girth">Chest Girth ({unit})</Label>
                   <Input
                     id="girth"
                     type="number"
@@ -156,7 +181,7 @@ export function WeightInputForm({ onSubmit, onCancel, initialData, goatName }: W
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="length">Body Length (cm)</Label>
+                  <Label htmlFor="length">Body Length ({unit})</Label>
                   <Input
                     id="length"
                     type="number"
