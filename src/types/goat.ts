@@ -7,10 +7,13 @@ export interface Goat {
   birthDate: Date;
   gender: 'male' | 'female';
   status: 'active' | 'sold' | 'deceased';
+  breedingStatus: '' | 'pregnant' | 'lactating' | 'resting'| 'kid';
   fatherId?: string;
   motherId?: string;
   color?: string;
-  weight?: number;
+  currentWeight?: number;
+  acquisitionType?: 'born' | 'bought';
+  isFavorite?: boolean;
   notes?: string;
   mediaFiles?: MediaFile[];
   createdAt: Date;

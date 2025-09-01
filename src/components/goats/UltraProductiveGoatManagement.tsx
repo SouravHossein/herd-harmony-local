@@ -60,8 +60,9 @@ export default function UltraProductiveGoatManagement() {
         goat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         goat.tagNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         goat.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (goat.nickname?.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+        goat.gender.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        goat.status.toLowerCase().includes(searchTerm.toLowerCase());
+
       const matchesStatus = filterStatus === 'all' || goat.status === filterStatus;
       const matchesGender = filterGender === 'all' || goat.gender === filterGender;
       const matchesBreed = filterBreed === 'all' || goat.breed === filterBreed;
@@ -73,7 +74,7 @@ export default function UltraProductiveGoatManagement() {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'age':
-          return new Date(b.dateOfBirth).getTime() - new Date(a.dateOfBirth).getTime();
+          return new Date(b.birthDate).getTime() - new Date(a.birthDate).getTime();
         case 'weight':
           return (b.currentWeight || 0) - (a.currentWeight || 0);
         case 'tagNumber':

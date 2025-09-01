@@ -19,7 +19,7 @@ import { ModeToggle } from './ModeToggle';
 import EnhancedDashboard from './EnhancedDashboard';
 import UltraProductiveGoatManagement from './goats/UltraProductiveGoatManagement';
 import { HealthAI } from './HealthAI';
-import FinanceDashboard from './FinanceDashboard';
+import FinanceDashboard from './finance/FinanceDashboard';
 
 export default function AllInOneDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
