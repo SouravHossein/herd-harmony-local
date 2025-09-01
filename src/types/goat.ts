@@ -1,162 +1,120 @@
-export interface MediaFile {
-  id: string;
-  filename: string;
-  type: 'image' | 'video';
-  url: string;
-  category: 'birth' | 'health' | 'growth' | 'breeding' | 'general' | 'milestone' | 'weaning';
-  timestamp: Date;
-  description?: string;
-  tags: string[];
-  fileSize?: number;
-  createdAt: Date;
-}
 
 export interface Goat {
   id: string;
   name: string;
-  nickname?: string;
-  breed: string;
   tagNumber: string;
+  breed: string;
+  birthDate: Date;
   gender: 'male' | 'female';
-  dateOfBirth: Date;
-  color: string;
-  status: 'active' | 'sold' | 'deceased' | 'archived';
-  hornStatus: 'horned' | 'polled' | 'disbudded';
+  status: 'active' | 'sold' | 'deceased';
   fatherId?: string;
   motherId?: string;
-  photoPath?: string; // Legacy field - keep for backward compatibility
-  imageId?: string; // Legacy field - keep for backward compatibility
-  mediaFiles: MediaFile[]; // New enhanced media system
+  color?: string;
+  weight?: number;
   notes?: string;
-  acquisitionType: 'born' | 'bought' | 'gifted' | 'transferred';
-  birthWeight?: number;
-  currentWeight?: number;
-  breedingStatus: 'kid' | 'active' | 'pregnant' | 'lactating' | 'resting' | 'retired';
-  tags: string[]; // Custom tags like "Top Breeder", "Watch", "For Sale"
-  isFavorite: boolean;
+  mediaFiles?: MediaFile[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-
+export interface WeightRecord {
+  id: string;
+  goatId: string;
+  weight: number;
+  date: Date;
+  method: 'actual' | 'estimated';
+  chestGirth?: number;
+  bodyLength?: number;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface HealthRecord {
   id: string;
   goatId: string;
-  date: Date;
-  type: 'vaccination' | 'treatment' | 'checkup' | 'deworming' | 'other';
+  type: 'vaccination' | 'treatment' | 'checkup' | 'medication' | 'injury' | 'illness';
   description: string;
-  medicine?: string;
-  veterinarian?: string;
-  status?: 'scheduled' | 'completed' | 'overdue';
+  date: Date;
   nextDueDate?: Date;
+  cost?: number;
+  veterinarian?: string;
+  medications?: string;
   notes?: string;
+  status: 'completed' | 'scheduled' | 'overdue';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface BreedingRecord {
   id: string;
-  sireId: string;
-  damId: string;
+  doeId: string;
+  buckId: string;
   breedingDate: Date;
-  expectedDueDate?: Date;
-  actualBirthDate?: Date;
-  kidIds: string[];
+  method: 'natural' | 'artificial';
+  expectedKiddingDate?: Date;
+  actualKiddingDate?: Date;
+  numberOfKids?: number;
+  kidIds?: string[];
   notes?: string;
+  status: 'planned' | 'confirmed' | 'completed' | 'failed';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface FarmStats {
-  totalGoats: number;
-  activeGoats: number;
-  maleGoats: number;
-  femaleGoats: number;
-  kidsBornThisYear: number;
-  upcomingHealthReminders: number;
-  averageWeight: number;
-  breedDistribution: Record<string, number>;
+export interface MediaFile {
+  id: string;
+  type: 'image' | 'video' | 'document';
+  url: string;
+  filename: string;
+  uploadDate: Date;
+  description?: string;
+  size?: number;
 }
 
-// Feed management types
 export interface Feed {
   id: string;
   name: string;
-  type: 'hay' | 'grain' | 'supplement' | 'pellet' | 'mineral' | 'other';
-  costPerKg: number;
-  stockKg: number;
-  expiryDate?: Date;
-  supplier: string;
-  nutritionalInfo?: {
-    protein: number;
-    fiber: number;
-    energy: number;
-  };
+  type: 'hay' | 'grain' | 'pellets' | 'supplement' | 'mineral' | 'other';
+  brand?: string;
+  protein?: number;
+  fiber?: number;
+  cost?: number;
+  unit?: string;
+  supplier?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FeedPlan {
+  id: string;
+  name: string;
+  description?: string;
+  goatIds: string[];
+  feeds: FeedPlanItem[];
+  isActive: boolean;
+  startDate: Date;
+  endDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface FeedPlanItem {
   feedId: string;
-  amountPerDay: number; // in kg
-  frequency: number; // times per day
-}
-
-export interface FeedPlan {
-  id: string;
-  name: string;
-  groupType: 'kids' | 'adults' | 'lactating' | 'bucks' | 'pregnant';
-  feedItems: FeedPlanItem[];
-  totalCostPerDay: number;
-  createdAt: Date;
-  updatedAt: Date;
+  amount: number;
+  unit: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  timesPerDay?: number;
 }
 
 export interface FeedLog {
   id: string;
   goatId: string;
   feedId: string;
+  amount: number;
+  unit: string;
   date: Date;
-  amountUsed: number;
-  cost: number;
   notes?: string;
   createdAt: Date;
-}
-
-export interface FeedStats {
-  totalFeedCost: number;
-  dailyFeedCost: number;
-  feedEfficiency: number;
-  lowStockFeeds: Feed[];
-  expiringFeeds: Feed[];
-  monthlyCostTrends: Array<{ month: string; cost: number }>;
-}
-
-// Add new interfaces for growth optimization
-export interface BreedStandard {
-  id: string;
-  breedName: string;
-  milestones: Array<{
-    ageMonths: number;
-    expectedWeight: number; // in kg
-    minWeight: number;
-    maxWeight: number;
-  }>;
-  isCustom: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface GrowthPerformance {
-  goatId: string;
-  currentScore: number; // GPS (Growth Performance Score)
-  trend: 'improving' | 'stable' | 'declining';
-  status: 'above-standard' | 'on-track' | 'below-standard' | 'concerning';
-  lastCalculated: Date;
-  recommendations: string[];
-}
-
-export interface GrowthAnalytics {
-  averageHerdGPS: number;
-  topPerformers: Array<{ goatId: string; score: number }>;
-  underPerformers: Array<{ goatId: string; score: number }>;
-  growthTrends: Array<{ month: string; averageGPS: number }>;
-  breedComparison: Record<string, number>;
 }
