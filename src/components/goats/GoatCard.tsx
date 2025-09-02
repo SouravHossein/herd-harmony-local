@@ -103,6 +103,13 @@ export default function GoatCard({
                 )}
               </div>
             )}
+            <div className="absolute -top-1 -left-1 h-4 w-4">
+                {goat.gender === 'female' ? (
+                  <Heart className="h-4 w-4 text-pink-500" />
+                ) : (
+                  <Activity className="h-4 w-4 text-blue-500" />
+                )}
+              </div>
             {goat.isFavorite && (
               <Star className="absolute -top-1 -right-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
             )}
@@ -111,13 +118,7 @@ export default function GoatCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg truncate">{goat.name}</h3>
-              <div className="flex items-center space-x-1">
-                {goat.gender === 'female' ? (
-                  <Heart className="h-4 w-4 text-pink-500" />
-                ) : (
-                  <Activity className="h-4 w-4 text-blue-500" />
-                )}
-              </div>
+              
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>#{goat.tagNumber}</p>

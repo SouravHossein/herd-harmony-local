@@ -1,9 +1,7 @@
 
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import AllInOneDashboard from '@/components/AllInOneDashboard';
-// import  GoatManagement  from '@/components/GoatManagement';
-// import { PedigreeWrapper } from '@/components/PedigreeWrapper';
+import AllInOneDashboard from '@/components/dashboard/AllInOneDashboard';
 import { FeedDashboard } from '@/components/feed/FeedDashboard';
 import FinanceDashboard from '@/components/finance/FinanceDashboard';
 import { HealthAI } from '@/components/HealthAI';
@@ -11,30 +9,23 @@ import GrowthOptimizer from '@/components/GrowthOptimizer';
 import BreedingPlanner from '@/components/breeding/BreedingPlanner';
 import { WeatherDashboard } from '@/components/weather/WeatherDashboard';
 import Settings from '@/components/Settings';
-import { WeightTracking } from '@/components/WeightTracking';
-import UltraProductiveGoatManagement from '@/components/goats/UltraProductiveGoatManagement';
+import { WeightTracking } from '@/components/weight/WeightTracking';
+import GoatManagement from '@/components/goats/GoatManagement';
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('dashboard');
 
-  const handleShowHealth = (goatId: string) => {
-    setActiveSection('health');
-  };
-
-  const handleShowWeight = (goatId: string) => {
-    setActiveSection('weight');
-  };
 
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
         return <AllInOneDashboard />;
       case 'goats':
-        return <UltraProductiveGoatManagement />;
+        return <GoatManagement />;
       case 'weight':
         return <WeightTracking />;
-      // case 'pedigree':
-        // return <PedigreeWrapper onShowHealth={handleShowHealth} onShowWeight={handleShowWeight} />;
+      case 'pedigree':
+        return 
       case 'breeding':
         return <BreedingPlanner />;
       case 'finance':

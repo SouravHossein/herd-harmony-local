@@ -23,7 +23,7 @@ import InteractiveGoatProfile from './InteractiveGoatProfile';
 import GoatForm from '../GoatForm';
 import { toast } from '@/components/ui/use-toast';
 
-export default function UltraProductiveGoatManagement() {
+export default function GoatManagement() {
   const { 
     goats, 
     addGoat, 

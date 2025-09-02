@@ -17,7 +17,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import { WeatherWidget } from './weather/WeatherWidget';
+import { WeatherWidget } from '../weather/WeatherWidget';
 
 ChartJS.register(
   CategoryScale,

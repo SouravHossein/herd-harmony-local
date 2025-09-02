@@ -161,7 +161,7 @@ export function PedigreeTree({
         <MiniMap 
           nodeColor={(node) => {
             if (node.data?.isUnknown) return '#9ca3af';
-            if (node.data?.goat?.gender === 'male') return '#3b82f6';
+            if ((node.data?.goat as Goat)?.gender === 'male') return '#3b82f6';
             return '#ec4899';
           }}
           nodeStrokeWidth={3}

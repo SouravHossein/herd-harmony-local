@@ -15,11 +15,11 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
-import { ModeToggle } from './ModeToggle';
+import { ModeToggle } from '../ModeToggle';
 import EnhancedDashboard from './EnhancedDashboard';
-import UltraProductiveGoatManagement from './goats/UltraProductiveGoatManagement';
-import { HealthAI } from './HealthAI';
-import FinanceDashboard from './finance/FinanceDashboard';
+import GoatManagement from '../goats/GoatManagement';
+import { HealthAI } from '../HealthAI';
+import FinanceDashboard from '../finance/FinanceDashboard';
 
 export default function AllInOneDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -113,7 +113,7 @@ export default function AllInOneDashboard() {
           </TabsContent>
 
           <TabsContent value="goats" className="space-y-6">
-            <UltraProductiveGoatManagement />
+            <GoatManagement />
           </TabsContent>
 
           <TabsContent value="health" className="space-y-6">
