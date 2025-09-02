@@ -10,7 +10,7 @@ import BreedingPlanner from '@/components/breeding/BreedingPlanner';
 import { WeatherDashboard } from '@/components/weather/WeatherDashboard';
 import Settings from '@/components/Settings';
 import { WeightTracking } from '@/components/weight/WeightTracking';
-import GoatManagement from '@/components/goats/GoatManagement';
+import { GoatManagement } from '@/components/goats/GoatManagement';
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('dashboard');

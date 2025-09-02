@@ -38,6 +38,15 @@ interface GoatContextType {
   addFinanceRecord: (record: any) => Promise<any>;
   updateFinanceRecord: (id: string, updates: any) => Promise<any>;
   deleteFinanceRecord: (id: string) => Promise<boolean>;
+  addFeed: (feed: any) => Promise<any>;
+  updateFeed: (id: string, updates: any) => Promise<any>;
+  deleteFeed: (id: string) => Promise<boolean>;
+  addFeedPlan: (plan: any) => Promise<any>;
+  updateFeedPlan: (id: string, updates: any) => Promise<any>;
+  deleteFeedPlan: (id: string) => Promise<boolean>;
+  addFeedLog: (log: any) => Promise<any>;
+  updateFeedLog: (id: string, updates: any) => Promise<any>;
+  deleteFeedLog: (id: string) => Promise<boolean>;
   getGoatWeightHistory: (goatId: string) => WeightRecord[];
   getGoatHealthHistory: (goatId: string) => HealthRecord[];
   getUpcomingHealthReminders: () => HealthRecord[];
@@ -273,6 +282,48 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     addFinanceRecord: currentData.addFinanceRecord,
     updateFinanceRecord: currentData.updateFinanceRecord,
     deleteFinanceRecord: currentData.deleteFinanceRecord,
+    addFeed: async (feed: any) => {
+      const newFeed = { ...feed, id: Date.now().toString(), createdAt: new Date(), updatedAt: new Date() };
+      currentData.setFeeds([...currentData.feeds, newFeed]);
+      return newFeed;
+    },
+    updateFeed: async (id: string, updates: any) => {
+      const updatedFeeds = currentData.feeds.map(f => f.id === id ? { ...f, ...updates, updatedAt: new Date() } : f);
+      currentData.setFeeds(updatedFeeds);
+      return updates;
+    },
+    deleteFeed: async (id: string) => {
+      currentData.setFeeds(currentData.feeds.filter(f => f.id !== id));
+      return true;
+    },
+    addFeedPlan: async (plan: any) => {
+      const newPlan = { ...plan, id: Date.now().toString(), createdAt: new Date(), updatedAt: new Date() };
+      currentData.setFeedPlans([...currentData.feedPlans, newPlan]);
+      return newPlan;
+    },
+    updateFeedPlan: async (id: string, updates: any) => {
+      const updatedPlans = currentData.feedPlans.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p);
+      currentData.setFeedPlans(updatedPlans);
+      return updates;
+    },
+    deleteFeedPlan: async (id: string) => {
+      currentData.setFeedPlans(currentData.feedPlans.filter(p => p.id !== id));
+      return true;
+    },
+    addFeedLog: async (log: any) => {
+      const newLog = { ...log, id: Date.now().toString(), createdAt: new Date() };
+      currentData.setFeedLogs([...currentData.feedLogs, newLog]);
+      return newLog;
+    },
+    updateFeedLog: async (id: string, updates: any) => {
+      const updatedLogs = currentData.feedLogs.map(l => l.id === id ? { ...l, ...updates } : l);
+      currentData.setFeedLogs(updatedLogs);
+      return updates;
+    },
+    deleteFeedLog: async (id: string) => {
+      currentData.setFeedLogs(currentData.feedLogs.filter(l => l.id !== id));
+      return true;
+    },
     getGoatWeightHistory,
     getGoatHealthHistory,
     getUpcomingHealthReminders,

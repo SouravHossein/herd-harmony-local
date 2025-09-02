@@ -17,7 +17,7 @@ import {
 import { useTheme } from '@/context/ThemeContext';
 import { ModeToggle } from '../ModeToggle';
 import EnhancedDashboard from './EnhancedDashboard';
-import GoatManagement from '../goats/GoatManagement';
+import { GoatManagement } from '../goats/GoatManagement';
 import { HealthAI } from '../HealthAI';
 import FinanceDashboard from '../finance/FinanceDashboard';
 
