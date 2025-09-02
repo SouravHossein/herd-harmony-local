@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,20 +14,32 @@ import { cn } from '@/lib/utils';
 import { useGoatData } from '@/hooks/useDatabase';
 import { FinanceRecord } from '@/types/finance';
 
+// Update the props interface
 interface FinanceFormProps {
   onSubmit: (record: Omit<FinanceRecord, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
+  initialData?: FinanceRecord;  // Add this line
 }
 
-export function FinanceForm({ onSubmit, onCancel }: FinanceFormProps) {
-  const [formData, setFormData] = useState({
-    type: 'expense' as 'income' | 'expense',
-    category: '',
-    amount: '',
-    date: new Date(),
-    description: '',
-    goatId: '',
-    receiptPath: ''
+export function FinanceForm({ onSubmit, onCancel, initialData }: FinanceFormProps) {
+  // Update the initial state to use initialData if provided
+  interface FinanceFormData {
+    type: "income" | "expense";
+    category: string;
+    amount: string;
+    date: Date;
+    description: string;
+    goatId?: string;
+    receiptPath?: string;
+  }
+  const [formData, setFormData] = useState<FinanceFormData>({
+    type: initialData?.type || 'expense' as 'income' | 'expense',
+    category: initialData?.category || '',
+    amount: initialData?.amount?.toString() || '',
+    date: initialData?.date ? new Date(initialData.date) : new Date(),
+    description: initialData?.description || '',
+    goatId: initialData?.goatId || '',
+    receiptPath: initialData?.receiptPath || ''
   });
   
   const [showCalendar, setShowCalendar] = useState(false);
@@ -84,7 +95,9 @@ export function FinanceForm({ onSubmit, onCancel }: FinanceFormProps) {
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle>Add Financial Transaction</CardTitle>
+        <CardTitle>
+          {initialData ? 'Edit Financial Transaction' : 'Add Financial Transaction'}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -187,7 +200,7 @@ export function FinanceForm({ onSubmit, onCancel }: FinanceFormProps) {
                 <SelectValue placeholder="Select goat (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value={null} >None</SelectItem>
                 {goats.map((goat) => (
                   <SelectItem key={goat.id} value={goat.id}>
                     {goat.name} ({goat.breed})
@@ -257,7 +270,7 @@ export function FinanceForm({ onSubmit, onCancel }: FinanceFormProps) {
                 formData.type === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
               )}
             >
-              Add {formData.type === 'income' ? 'Income' : 'Expense'}
+              {initialData ? 'Save Changes' : `Add ${formData.type === 'income' ? 'Income' : 'Expense'}`}
             </Button>
           </div>
         </form>

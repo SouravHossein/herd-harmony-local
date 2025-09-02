@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,36 +26,68 @@ import {
   Lightbulb,
   Info,
   Plus,
-  Download
+  Download,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { useGoatData } from '@/hooks/useDatabase';
 import { FinanceAI } from '@/lib/financeAI';
 import { FinanceRecord, FinanceStats, GoatProfitability } from '@/types/finance';
+import { FinanceForm } from './FinanceForm';
+import { useGoatContext } from '@/context/GoatContext';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { format } from 'date-fns';
 
 export default function FinanceDashboard() {
-  const [financeRecords, setFinanceRecords] = useState<FinanceRecord[]>([]);
+  const {addFinanceRecord,updateFinanceRecord,deleteFinanceRecord,financeRecords,setFinanceRecords}=useGoatContext()
   const [stats, setStats] = useState<FinanceStats | null>(null);
   const [goatProfitability, setGoatProfitability] = useState<GoatProfitability[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<FinanceRecord | null>(null);
+  const [currentTab, setCurrentTab] = useState('overview');
+
   const { goats } = useGoatData();
 
   useEffect(() => {
     loadFinanceData();
-  }, []);
+  }, [deleteFinanceRecord, updateFinanceRecord, addFinanceRecord]);
 
   const loadFinanceData = async () => {
     setLoading(true);
     try {
       // This would be replaced with actual API calls
-      const mockRecords: FinanceRecord[] = [];
-      setFinanceRecords(mockRecords);
+   
       
-      const calculatedStats = calculateStats(mockRecords);
+      const calculatedStats = calculateStats(financeRecords);
       setStats(calculatedStats);
-      
-      const profitability = calculateGoatProfitability(mockRecords);
+
+      const profitability = calculateGoatProfitability(financeRecords);
       setGoatProfitability(profitability);
     } catch (error) {
       console.error('Error loading finance data:', error);
@@ -160,7 +191,8 @@ export default function FinanceDashboard() {
       };
     }).sort((a, b) => b.netProfit - a.netProfit);
   };
-
+  console.log(financeRecords);
+  
   const insights = stats ? FinanceAI.generateInsights(financeRecords, stats) : [];
 
   const formatCurrency = (amount: number) => {
@@ -191,6 +223,166 @@ export default function FinanceDashboard() {
       </div>
     );
   }
+//  onSubmit: (record: Omit<FinanceRecord, 'id' | 'createdAt' | 'updatedAt'>) => void;
+
+const handleOnSubmit = async (record: Omit<FinanceRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
+  try {
+    await addFinanceRecord(record);
+    setShowAddForm(false);
+    loadFinanceData(); // Refresh data after adding
+  } catch (error) {
+    console.error('Failed to add record:', error);
+  }
+};
+
+  const handleEdit = (record: FinanceRecord) => {
+    setSelectedRecord(record);
+    setShowEditDialog(true);
+  };
+
+  const handleDelete = (record: FinanceRecord) => {
+    setSelectedRecord(record);
+    setShowDeleteDialog(true);
+  };
+
+  const handleEditSubmit = async (record: Omit<FinanceRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      if (!selectedRecord?.id) return;
+      await updateFinanceRecord(selectedRecord.id, record);
+      setShowEditDialog(false);
+      loadFinanceData(); // Refresh data
+    } catch (error) {
+      console.error('Failed to update record:', error);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteFinanceRecord(selectedRecord.id);
+      setShowDeleteDialog(false);
+      loadFinanceData(); // Refresh data
+    } catch (error) {
+      console.error('Failed to delete record:', error);
+    }
+  };
+
+  const updatedTabs = (
+    <TabsList>
+      <TabsTrigger 
+        value="overview" 
+        onClick={() => setCurrentTab('overview')}
+      >
+        Overview
+      </TabsTrigger>
+      <TabsTrigger 
+        value="trends" 
+        onClick={() => setCurrentTab('trends')}
+      >
+        Trends
+      </TabsTrigger>
+      <TabsTrigger 
+        value="profitability" 
+        onClick={() => setCurrentTab('profitability')}
+      >
+        Goat Profitability
+      </TabsTrigger>
+      <TabsTrigger 
+        value="transactions" 
+        onClick={() => setCurrentTab('transactions')}
+      >
+        Transactions
+      </TabsTrigger>
+    </TabsList>
+  );
+
+  const transactionsTab = (
+    <TabsContent value="transactions">
+      <Card>
+        <CardHeader>
+          <CardTitle>Financial Transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {financeRecords.map((record) => (
+                <TableRow key={record.id}>
+                  <TableCell>{format(new Date(record.date), 'PP')}</TableCell>
+                  <TableCell>
+                    <Badge variant={record.type === 'income' ? 'default' : 'destructive'}>
+                      {record.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{record.category}</TableCell>
+                  <TableCell>{formatCurrency(record.amount)}</TableCell>
+                  <TableCell>{record.description}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(record)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(record)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </TabsContent>
+  );
+
+  const editDialog = (
+    <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit Transaction</DialogTitle>
+        </DialogHeader>
+        <FinanceForm
+          initialData={selectedRecord}
+          onSubmit={handleEditSubmit}
+          onCancel={() => setShowEditDialog(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+
+  const deleteDialog = (
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this transaction? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   return (
     <div className="space-y-6">
@@ -207,7 +399,14 @@ export default function FinanceDashboard() {
           </Button>
         </div>
       </div>
-
+      {showAddForm && (
+        <div>
+          <FinanceForm 
+            onCancel={() => setShowAddForm(false)} 
+            onSubmit={handleOnSubmit} 
+          />
+        </div>
+      )}
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
@@ -276,12 +475,7 @@ export default function FinanceDashboard() {
 
       {/* Charts and Analytics */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
-          <TabsTrigger value="profitability">Goat Profitability</TabsTrigger>
-        </TabsList>
-
+        {updatedTabs}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
@@ -396,7 +590,11 @@ export default function FinanceDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+        {transactionsTab}
       </Tabs>
+
+      {editDialog}
+      {deleteDialog}
     </div>
   );
 }
