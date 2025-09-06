@@ -65,7 +65,7 @@ export class GrowthAI {
     weightRecords: WeightRecord[],
     breedStandards: BreedStandard[]
   ): GrowthPerformance {
-    const goatAge = this.calculateAgeInMonths(goat.dateOfBirth);
+    const goatAge = this.calculateAgeInMonths(goat.birthDate);
     const latestWeight = this.getLatestWeight(weightRecords.filter(w => w.goatId === goat.id));
     
     if (!latestWeight) {
@@ -111,9 +111,9 @@ export class GrowthAI {
     };
   }
 
-  static calculateAgeInMonths(dateOfBirth: Date): number {
+  static calculateAgeInMonths(birthDate: Date): number {
     const now = new Date();
-    const birth = new Date(dateOfBirth);
+    const birth = new Date(birthDate);
     const diffTime = Math.abs(now.getTime() - birth.getTime());
     const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30.44)); // Average days per month
     return diffMonths;
@@ -207,7 +207,7 @@ export class GrowthAI {
     }
 
     // Age-specific recommendations
-    const ageMonths = this.calculateAgeInMonths(goat.dateOfBirth);
+    const ageMonths = this.calculateAgeInMonths(goat.birthDate);
     if (ageMonths < 6) {
       recommendations.push('Ensure adequate milk/milk replacer for young kids');
     } else if (ageMonths < 12) {

@@ -87,7 +87,7 @@ export default function EnhancedDashboard() {
     maleGoats: goats.filter(goat => goat.gender === 'male').length,
     femaleGoats: goats.filter(goat => goat.gender === 'female').length,
     kidsBornThisYear: goats.filter(goat => {
-      const birthYear = new Date(goat.dateOfBirth).getFullYear();
+      const birthYear = new Date(goat.birthDate).getFullYear();
       return birthYear === new Date().getFullYear();
     }).length,
     upcomingReminders: getUpcomingHealthReminders().length,

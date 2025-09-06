@@ -21,7 +21,7 @@ export class DataIntegrityManager {
       errors.push('Gender must be male or female');
     }
 
-    if (!goat.dateOfBirth || isNaN(new Date(goat.dateOfBirth).getTime())) {
+    if (!goat.birthDate || isNaN(new Date(goat.birthDate).getTime())) {
       errors.push('Valid date of birth is required');
     }
 

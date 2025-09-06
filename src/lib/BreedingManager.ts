@@ -29,7 +29,7 @@ export class BreedingManager {
             name: kidDetail.name,
             tagNumber: `${breedingRecord.damId}-${kidDetail.name}`,
             gender: kidDetail.gender,
-            dateOfBirth: kiddingData.birthDate,
+            birthDate: kiddingData.birthDate,
             breed: 'Unknown', // Will be inherited from parents
             color: '',
             status: kidDetail.status === 'alive' ? 'active' : 'deceased',
@@ -272,7 +272,7 @@ export class BreedingManager {
             // Find goats that might be offspring from this breeding
             const potentialOffspring = goats.filter(goat => {
               const birthDateMatch = Math.abs(
-                goat.dateOfBirth.getTime() - breeding.actualBirthDate!.getTime()
+                goat.birthDate.getTime() - breeding.actualBirthDate!.getTime()
               ) < 7 * 24 * 60 * 60 * 1000; // Within 7 days
 
               return birthDateMatch && 

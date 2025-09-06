@@ -12,7 +12,7 @@ import { MediaFile } from '@/types/goat';
 import MediaGallery from './media/MediaGallery';
 import EnhancedParentSelector from './EnhancedParentSelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PedigreeAI } from '@/lib/pedigreeAI';
+import { BreedingAdvisor } from '@/lib/breedingAdvisor';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Info, Camera } from 'lucide-react';
 
@@ -30,7 +30,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
     breed: '',
     tagNumber: '',
     gender: 'female' as 'male' | 'female',
-    dateOfBirth: '',
+    birthDate: '',
     color: '',
     status: 'active' as 'active' | 'sold' | 'deceased' | 'archived',
     hornStatus: 'horned' as 'horned' | 'polled' | 'disbudded',
@@ -53,7 +53,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
         breed: goat.breed,
         tagNumber: goat.tagNumber,
         gender: goat.gender,
-        dateOfBirth: new Date(goat.dateOfBirth).toISOString().split('T')[0],
+        birthDate: goat.birthDate && !isNaN(new Date(goat.birthDate).getTime()) ? new Date(goat.birthDate).toISOString().split('T')[0] : '',
         color: goat.color,
         status: goat.status,
         hornStatus: goat.hornStatus,
@@ -68,7 +68,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
         breed: '',
         tagNumber: '',
         gender: 'female',
-        dateOfBirth: '',
+        birthDate: '',
         color: '',
         status: 'active',
         hornStatus: 'horned',
@@ -82,12 +82,12 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
 
   useEffect(() => {
     // Validate parentage when parents change
-    if ((goat?.id || formData.fatherId || formData.motherId) && formData.dateOfBirth) {
+    if ((goat?.id || formData.fatherId || formData.motherId) && formData.birthDate) {
       const tempGoat = {
         ...goat,
         id: goat?.id || `temp-${Date.now()}`, // Use temporary ID for new goats
         name: formData.name || 'New Goat',
-        dateOfBirth: new Date(formData.dateOfBirth),
+        birthDate: new Date(formData.birthDate),
         breed: formData.breed || '',
         tagNumber: formData.tagNumber || '',
         gender: formData.gender,
@@ -103,17 +103,37 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
         breedingStatus: 'active'
       } as Goat;
       
-      const validation = PedigreeAI.validateParentage(
-        tempGoat,
-        formData.fatherId,
-        formData.motherId,
-        goats
-      );
-      setPedigreeValidation(validation);
+      const allErrors: string[] = [];
+      const allWarnings: string[] = [];
+
+
+      if (formData.fatherId) {
+        const father = goats.find(g => g.id === formData.fatherId);
+        if (father) {
+          const validation = BreedingAdvisor.validateRelationship(tempGoat, father, goats);
+          allErrors.push(...validation.errors);
+          allWarnings.push(...validation.warnings);
+        }
+      }
+
+      if (formData.motherId) {
+        const mother = goats.find(g => g.id === formData.motherId);
+        if (mother) {
+          const validation = BreedingAdvisor.validateRelationship(tempGoat, mother, goats);
+          allErrors.push(...validation.errors);
+          allWarnings.push(...validation.warnings);
+        }
+      }
+
+      if (formData.fatherId && formData.fatherId === formData.motherId) {
+        allErrors.push('A goat cannot have the same parent as both father and mother');
+      }
+
+      setPedigreeValidation({ isValid: allErrors.length === 0, errors: allErrors, warnings: allWarnings });
     } else {
       setPedigreeValidation({ isValid: true, warnings: [], errors: [] });
     }
-  }, [formData.fatherId, formData.motherId, formData.dateOfBirth, formData.name, goat, goats]);
+  }, [formData.fatherId, formData.motherId, formData.birthDate, formData.name, goat, goats]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +144,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
 
     const submitData = {
       ...formData,
-      dateOfBirth: new Date(formData.dateOfBirth),
+      birthDate: new Date(formData.birthDate),
       createdAt: goat?.createdAt || new Date(),
       updatedAt: new Date(),
     };
@@ -214,12 +234,12 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                  <Label htmlFor="birthDate">Date of Birth *</Label>
                   <Input
-                    id="dateOfBirth"
+                    id="birthDate"
                     type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    value={formData.birthDate}
+                    onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
                     required
                   />
                 </div>
@@ -268,8 +288,14 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
 
           {/* Media Gallery */}
           <MediaGallery
-            mediaFiles={formData.mediaFiles}
-            onMediaChange={(files) => setFormData({ ...formData, mediaFiles: files })}
+            mediaFiles={formData.mediaFiles.filter(file => file.type === "image" || file.type === "video")}
+            onMediaChange={(files) => setFormData({ 
+              ...formData, 
+              mediaFiles: files.map(file => ({
+                ...file,
+                uploadDate: file.createdAt ?? new Date()
+              }))
+            })}
             config={mediaConfig}
           />
 

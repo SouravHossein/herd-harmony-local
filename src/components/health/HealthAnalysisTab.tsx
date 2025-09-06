@@ -121,7 +121,7 @@ export function HealthAnalysisTab() {
     if (!goat) return;
 
     const goatHealthHistory = healthRecords.filter(record => record.goatId === selectedGoatId);
-    const age = Math.floor((new Date().getTime() - new Date(goat.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    const age = Math.floor((new Date().getTime() - new Date(goat.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     
     let riskScore = 0;
     const riskFactors = [];

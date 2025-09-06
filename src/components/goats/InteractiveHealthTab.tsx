@@ -74,7 +74,7 @@ export function InteractiveHealthTab({
     const ageMs = now.getTime() - new Date(birthDate).getTime();
     return Math.floor(ageMs / (1000 * 60 * 60 * 24 * 30.44));
   };
-  const vaccinationSchedule = healthAI.getVaccinationSchedule(calculateAge(goat.dateOfBirth));
+  const vaccinationSchedule = healthAI.getVaccinationSchedule(calculateAge(goat.birthDate));
 
   const handleSymptomAnalysis = () => {
     if (symptomInput.trim()) {

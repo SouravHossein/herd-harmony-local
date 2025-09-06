@@ -103,10 +103,10 @@ export default function GoatGeneralInfo({ goat }: GoatGeneralInfoProps) {
                 {goat.isFavorite && <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />}
               </p>
             </div>
-            <div>
+            {/* <div>
               <p className="text-sm text-muted-foreground">Nickname</p>
               <p className="font-medium">{goat.nickname || 'None'}</p>
-            </div>
+            </div> */}
             <div>
               <p className="text-sm text-muted-foreground">Tag Number</p>
               <p className="font-medium">#{goat.tagNumber}</p>
@@ -160,7 +160,7 @@ export default function GoatGeneralInfo({ goat }: GoatGeneralInfoProps) {
         <CardContent className="space-y-4">
           <div>
             <p className="text-sm text-muted-foreground">Date of Birth</p>
-            <p className="font-medium">{formatDate(goat.dateOfBirth)}</p>
+            <p className="font-medium">{formatDate(goat.birthDate)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Acquisition Type</p>

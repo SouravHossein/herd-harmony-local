@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import {
   Card,
@@ -251,6 +252,7 @@ export default function FeedInventory({
                   onChange={(e) => setEditFeed({ ...editFeed, type: e.target.value as any })}
                   className="col-span-3 rounded-md border-gray-200 shadow-sm focus:border-primary focus:ring-primary"
                 >
+                  <option value="grass">Grass</option>
                   <option value="hay">Hay</option>
                   <option value="grain">Grain</option>
                   <option value="supplement">Supplement</option>

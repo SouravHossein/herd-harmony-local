@@ -20,7 +20,7 @@ export class BreedingAI {
     const recommendations: BreedingRecommendation[] = [];
 
     // Age check
-    const ageInMonths = this.calculateAgeInMonths(goat.dateOfBirth);
+    const ageInMonths = this.calculateAgeInMonths(goat.birthDate);
     if (ageInMonths < 8) {
       recommendations.push({
         type: 'warning',

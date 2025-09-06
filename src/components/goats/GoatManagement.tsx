@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import GoatCard from './GoatCard';
 import InteractiveGoatProfile from './InteractiveGoatProfile';
 import GoatForm from '../GoatForm';
 import { toast } from '@/components/ui/use-toast';
+import { c } from 'node_modules/framer-motion/dist/types.d-Cjd591yU';
 
 export function GoatManagement() {
   const { 
@@ -37,8 +38,13 @@ export function GoatManagement() {
     addHealthRecord,
     updateHealthRecord,
     deleteHealthRecord,
+    breedingRecords,
+    addBreedingRecord,
+    updateBreedingRecord,
+    deleteBreedingRecord,
     loading, 
-    error 
+    error,
+    getThumbnails
   } = useGoatContext();
 
   const [selectedGoat, setSelectedGoat] = useState<Goat | null>(null);
@@ -50,8 +56,17 @@ export function GoatManagement() {
   const [filterGender, setFilterGender] = useState<string>('all');
   const [filterBreed, setFilterBreed] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
-
+  const [thumbnails, setThumbnails] = useState<{goatId: string, thumbnailUrl: string}[]>([]);
   // Get unique breeds for filter
+  useEffect(() => {
+    const fetchThumbnails = async () => {
+      const data = await getThumbnails();
+      setThumbnails(data);
+      console.log('Fetched thumbnails:', data)
+    };
+    fetchThumbnails();
+  }, [getThumbnails]);
+
   const breeds = [...new Set(goats.map(g => g.breed))];
 
   const filteredGoats = goats
@@ -101,6 +116,7 @@ export function GoatManagement() {
     setIsProfileOpen(true);
   };
 
+  const thumbnail = async () => await getThumbnails();
   const handleDeleteGoat = async (goat: Goat) => {
     if (window.confirm(`Are you sure you want to delete ${goat.name}? This action cannot be undone.`)) {
       try {
@@ -131,6 +147,14 @@ export function GoatManagement() {
       title: "Quick Health",
       description: `Opening health form for ${goat.name}`,
     });
+  };
+
+  const handleQuickBreeding = (goat: Goat) => {
+    toast({
+      title: "Quick Breeding",
+      description: `Opening breeding form for ${goat.name}`,
+    });
+    // TODO: Implement actual breeding form opening logic
   };
 
   const handleToggleFavorite = async (goat: Goat) => {
@@ -261,7 +285,7 @@ export function GoatManagement() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, tag, breed, or nickname..."
+                placeholder="Search by name, tag, breed ..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -376,7 +400,10 @@ export function GoatManagement() {
               onDelete={handleDeleteGoat}
               onQuickWeight={handleQuickWeight}
               onQuickHealth={handleQuickHealth}
+              onQuickBreeding={handleQuickBreeding}
               onToggleFavorite={handleToggleFavorite}
+              viewMode={viewMode}
+              thumbnail={thumbnails.find(t => t.goatId === goat.id)?.thumbnailUrl}
             />
           ))}
         </div>
@@ -429,6 +456,11 @@ export function GoatManagement() {
         onAddHealthRecord={addHealthRecord}
         onUpdateHealthRecord={updateHealthRecord}
         onDeleteHealthRecord={deleteHealthRecord}
+        allGoats={goats}
+        breedingRecords={breedingRecords}
+        onAddBreeding={addBreedingRecord}
+        onUpdateBreeding={updateBreedingRecord}
+        onDeleteBreeding={deleteBreedingRecord}
       />
     </div>
   );

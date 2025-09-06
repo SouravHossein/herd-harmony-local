@@ -97,7 +97,7 @@ export default function GoatProfile({
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                   <span>#{goat.tagNumber}</span>
                   <span>ID: {goat.id}</span>
-                  <span>{calculateAge(goat.dateOfBirth)}</span>
+                  <span>{calculateAge(goat.birthDate)}</span>
                 </div>
               </div>
             </div>

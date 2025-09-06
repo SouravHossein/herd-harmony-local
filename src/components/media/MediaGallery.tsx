@@ -89,9 +89,12 @@ export default function MediaGallery({
           timestamp: finalConfig.autoTimestamp ? new Date() : new Date(),
           category: finalConfig.defaultCategory,
           tags: [],
-          fileSize: file.size,
+          size: file.size,
           thumbnailUrl: isVideo ? undefined : url,
-          createdAt: new Date()
+          createdAt: new Date(),
+          goatId: '', // Set to appropriate goatId if available
+          primary: false, // Default value, update as needed
+          uploadDate: new Date() // Set to current date
         };
 
         newFiles.push(mediaFile);
@@ -327,7 +330,7 @@ export default function MediaGallery({
                   <Label>Date</Label>
                   <Input
                     type="date"
-                    value={selectedMedia.timestamp.toISOString().split('T')[0]}
+                    value={new Date(selectedMedia.timestamp).toISOString().split('T')[0]}
                     onChange={(e) =>
                       updateMediaMetadata(selectedMedia.id, {
                         timestamp: new Date(e.target.value)

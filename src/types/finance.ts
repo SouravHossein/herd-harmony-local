@@ -8,6 +8,8 @@ export interface FinanceRecord {
   description: string;
   receiptPath?: string;
   goatId?: string;
+  healthRecordId?: string;
+  feedLogId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

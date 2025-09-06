@@ -53,7 +53,7 @@ export function InteractiveBreedingTab({
       description: "New breeding record has been added successfully."
     });
   };
-
+if(!allGoats) return null;
   const handleUpdateBreeding = (formData: FormData) => {
     if (!editingRecord || !onUpdateBreeding) return;
 
@@ -106,7 +106,7 @@ export function InteractiveBreedingTab({
     return { status: 'bred', label: 'Bred', color: 'bg-purple-500' };
   };
 
-  const availableSires = allGoats.filter(g => g.gender === 'male' && g.status === 'active' && g.id !== goat.id);
+  const availableSires = allGoats?.filter(g => g.gender === 'male' && g.status === 'active' && g.id !== goat.id);
 
   return (
     <div className="space-y-6">

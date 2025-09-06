@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useGoatData as useElectronData } from '@/hooks/useDatabase';
-import { useGoatData as useLocalStorageData } from '@/hooks/useLocalStorageOnly';
-import { Goat, WeightRecord, HealthRecord, BreedingRecord, Feed, FeedPlan, FeedLog } from '@/types/goat';
+import { useGoatData } from '@/hooks/useDatabase';
+import { Goat, WeightRecord, HealthRecord, BreedingRecord, Feed, FeedPlan, FeedLog, MediaFile, MediaUploadFile } from '@/types/goat';
 
 interface GoatContextType {
   goats: Goat[];
@@ -50,6 +49,33 @@ interface GoatContextType {
   getGoatWeightHistory: (goatId: string) => WeightRecord[];
   getGoatHealthHistory: (goatId: string) => HealthRecord[];
   getUpcomingHealthReminders: () => HealthRecord[];
+
+
+  // Media operations
+  getMediaByGoatId: (goatId: string) => Promise<MediaFile[]>;
+  getThumbnails: () => Promise<{ goatId: string; thumbnailUrl: string | null }[]>;
+  addMediaViaDialog: (goatId: string, category: string, description?: string, tags?: string[]) => Promise<MediaFile[]>;
+  uploadStart: (meta: { goatId: string; filename: string; totalSize: number; category: string; description?: string; tags?: string[] }) => Promise<{ uploadId: string }>;
+  uploadChunk: (uploadId: string, chunk: ArrayBuffer) => Promise<boolean>;
+  uploadComplete: (uploadId: string) => Promise<MediaFile | null>;
+  updateMedia: (mediaId: string, updates: Partial<MediaFile>) => Promise<MediaFile | null>;
+  deleteMedia: (mediaId: string) => Promise<boolean>;
+  downloadMedia: (mediaId: string) => Promise<{ success: boolean; error?: string }>;
+  setPrimaryMedia: (goatId: string, mediaId: string) => Promise<MediaFile | null>;
+
+  // // File operations for UI
+  // getMediaFilePath: (mediaId: string) => Promise<string | null>;
+  // openMediaFile: (mediaId: string) => Promise<boolean>;
+  // revealMediaFileInFolder: (mediaId: string) => Promise<boolean>;
+
+
+  // File operations
+  // showSaveDialog: (options: any) => Promise<any>;
+  // showOpenDialog: (options: any) => Promise<any>;
+  // writeFile: (filePath: string, data: string) => Promise<boolean>;
+  // readFile: (filePath: string) => Promise<string | null>;
+  // deleteFile: (filePath: string) => Promise<boolean>;
+  // Data import/export
   exportData: () => Promise<any>;
   importData: (data: any) => Promise<boolean>;
   clearAllData: () => Promise<boolean>;
@@ -63,14 +89,15 @@ const GoatContext = createContext<GoatContextType | undefined>(undefined);
 export function GoatProvider({ children }: { children: ReactNode }) {
   // Check if running in Electron environment
   const isElectron = window.electronAPI?.isElectron;
-  
+
   // Use appropriate data layer based on environment
-  const electronData = isElectron ? useElectronData() : null;
-  const localStorageData = !isElectron ? useLocalStorageData() : null;
-  
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const electronData = isElectron ? useGoatData() : null;
+  // const localStorageData = !isElectron ? useLocalStorageData() : null;
+
   // Use Electron data if available, otherwise localStorage
-  const currentData = electronData || localStorageData!;
-  
+  const currentData = electronData //|| localStorageData!;
+
   // Utility functions that work with both data sources
   const getGoatWeightHistory = (goatId: string): WeightRecord[] => {
     return (currentData.weightRecords || []).filter((record: WeightRecord) => record.goatId === goatId);
@@ -83,9 +110,9 @@ export function GoatProvider({ children }: { children: ReactNode }) {
   const getUpcomingHealthReminders = (): HealthRecord[] => {
     const records = currentData.healthRecords || [];
     const now = new Date();
-    return records.filter((record: HealthRecord) => 
-      record.status === 'scheduled' && 
-      record.nextDueDate && 
+    return records.filter((record: HealthRecord) =>
+      record.status === 'scheduled' &&
+      record.nextDueDate &&
       new Date(record.nextDueDate) >= now
     );
   };
@@ -156,8 +183,8 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     return {
       totalGoats: goats.length,
       activeGoats: goats.filter((g: Goat) => g.status === 'active').length,
-      averageWeight: weightRecords.length > 0 
-        ? weightRecords.reduce((sum: number, r: WeightRecord) => sum + r.weight, 0) / weightRecords.length 
+      averageWeight: weightRecords.length > 0
+        ? weightRecords.reduce((sum: number, r: WeightRecord) => sum + r.weight, 0) / weightRecords.length
         : 0,
       upcomingReminders: getUpcomingHealthReminders().length
     };
@@ -168,13 +195,13 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     if (isElectron && electronData) {
       return electronData.getPedigreeTree(goatId, generations);
     }
-    
+
     // Browser fallback - build pedigree from local data
     const goats = currentData.goats || [];
     const nodes: any[] = [];
     const edges: any[] = [];
     const processedIds = new Set<string>();
-    
+
     const addNode = (goat: Goat | null, x: number, y: number, generation: number) => {
       const nodeId = goat?.id || `unknown-${Math.random()}`;
       if (goat && processedIds.has(goat.id)) return nodeId;
@@ -213,7 +240,7 @@ export function GoatProvider({ children }: { children: ReactNode }) {
         const motherX = x - 250;
         const motherY = y;
         const motherNodeId = buildMaternalTree(goat.motherId, generation + 1, motherX, motherY);
-        
+
         if (motherNodeId) {
           edges.push({
             id: `${goat.motherId}-${currentGoatId}`,
@@ -227,9 +254,9 @@ export function GoatProvider({ children }: { children: ReactNode }) {
 
       return nodeId;
     };
-    
+
     buildMaternalTree(goatId, 0, 400, 200);
-    
+
     return { nodes, edges };
   };
 
@@ -237,7 +264,7 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     if (isElectron && electronData) {
       return electronData.calculateInbreedingRisk(sireId, damId);
     }
-    
+
     // Browser fallback - simple calculation
     return {
       risk: 0,
@@ -246,7 +273,7 @@ export function GoatProvider({ children }: { children: ReactNode }) {
       riskLevel: 'low'
     };
   };
-  
+
   // Create unified context value that works with both backends
   const contextValue: GoatContextType = {
     goats: currentData.goats || [],
@@ -282,48 +309,15 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     addFinanceRecord: currentData.addFinanceRecord,
     updateFinanceRecord: currentData.updateFinanceRecord,
     deleteFinanceRecord: currentData.deleteFinanceRecord,
-    addFeed: async (feed: any) => {
-      const newFeed = { ...feed, id: Date.now().toString(), createdAt: new Date(), updatedAt: new Date() };
-      currentData.setFeeds([...currentData.feeds, newFeed]);
-      return newFeed;
-    },
-    updateFeed: async (id: string, updates: any) => {
-      const updatedFeeds = currentData.feeds.map(f => f.id === id ? { ...f, ...updates, updatedAt: new Date() } : f);
-      currentData.setFeeds(updatedFeeds);
-      return updates;
-    },
-    deleteFeed: async (id: string) => {
-      currentData.setFeeds(currentData.feeds.filter(f => f.id !== id));
-      return true;
-    },
-    addFeedPlan: async (plan: any) => {
-      const newPlan = { ...plan, id: Date.now().toString(), createdAt: new Date(), updatedAt: new Date() };
-      currentData.setFeedPlans([...currentData.feedPlans, newPlan]);
-      return newPlan;
-    },
-    updateFeedPlan: async (id: string, updates: any) => {
-      const updatedPlans = currentData.feedPlans.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p);
-      currentData.setFeedPlans(updatedPlans);
-      return updates;
-    },
-    deleteFeedPlan: async (id: string) => {
-      currentData.setFeedPlans(currentData.feedPlans.filter(p => p.id !== id));
-      return true;
-    },
-    addFeedLog: async (log: any) => {
-      const newLog = { ...log, id: Date.now().toString(), createdAt: new Date() };
-      currentData.setFeedLogs([...currentData.feedLogs, newLog]);
-      return newLog;
-    },
-    updateFeedLog: async (id: string, updates: any) => {
-      const updatedLogs = currentData.feedLogs.map(l => l.id === id ? { ...l, ...updates } : l);
-      currentData.setFeedLogs(updatedLogs);
-      return updates;
-    },
-    deleteFeedLog: async (id: string) => {
-      currentData.setFeedLogs(currentData.feedLogs.filter(l => l.id !== id));
-      return true;
-    },
+    addFeed: currentData.addFeed,
+    updateFeed: currentData.updateFeed,
+    deleteFeed: currentData.deleteFeed,
+    addFeedPlan: currentData.addFeedPlan,
+    updateFeedPlan: currentData.updateFeedPlan,
+    deleteFeedPlan: currentData.deleteFeedPlan,
+    addFeedLog: currentData.addFeedLog,
+    updateFeedLog: currentData.updateFeedLog,
+    deleteFeedLog: currentData.deleteFeedLog,
     getGoatWeightHistory,
     getGoatHealthHistory,
     getUpcomingHealthReminders,
@@ -332,7 +326,28 @@ export function GoatProvider({ children }: { children: ReactNode }) {
     clearAllData,
     getFarmStats,
     getPedigreeTree,
-    calculateInbreedingRisk
+    calculateInbreedingRisk,
+    // Media operations
+    getThumbnails: currentData.getThumbnails,
+    getMediaByGoatId: currentData.getMediaByGoatId,
+    addMediaViaDialog: currentData.addMediaViaDialog,
+    uploadStart: currentData.uploadStart,
+    uploadChunk: currentData.uploadChunk,
+    uploadComplete: currentData.uploadComplete,
+    updateMedia: currentData.updateMedia,
+    deleteMedia: currentData.deleteMedia,
+    downloadMedia: currentData.downloadMedia,
+    setPrimaryMedia: currentData.setPrimaryMedia,
+    // File operations for UI
+    // getMediaFilePath: currentData.getMediaFilePath,    
+    // openMediaFile: currentData.openMediaFile,
+    // revealMediaFileInFolder: currentData.revealMediaFileInFolder,
+    // // File operations
+    // showSaveDialog: currentData.showSaveDialog,
+    // showOpenDialog: currentData.showOpenDialog,
+    // writeFile: currentData.writeFile,
+    // readFile: currentData.readFile,
+    // deleteFile: currentData.deleteFile, 
   };
 
   return (

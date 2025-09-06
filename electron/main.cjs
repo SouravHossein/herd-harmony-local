@@ -1,10 +1,52 @@
-const { app, BrowserWindow, ipcMain, Menu, dialog, shell, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog, shell, Notification, protocol } = require('electron');
 const path = require('path');
-const DatabaseService = require('./services/DatabaseService.cjs');
+const fs = require('fs');
+const util = require('util');
+const {getMimeType} = require('./helpers/mime.cjs');
+
+// --- Log to file ---
+const logDir = app.getPath('userData');
+const logFile = path.join(logDir, 'electron.log');
+
+// Function to clear the log file
+function clearLogFile() {
+  try {
+    fs.writeFileSync(logFile, '');
+    console.log('Log file cleared.');
+  } catch (err) {
+    console.error('Failed to clear log file:', err);
+  }
+}
+
+// Clear the log file at the start of the application
+clearLogFile();
+
+const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+
+console.log = (...args) => {
+  logStream.write(util.format(...args) + '\n');
+  process.stdout.write(util.format(...args) + '\n');
+};
+console.error = (...args) => {
+  logStream.write(util.format('ERROR:', ...args) + '\n');
+  process.stderr.write(util.format('ERROR:', ...args) + '\n');
+};
+console.warn = (...args) => {
+  logStream.write(util.format('WARN:', ...args) + '\n');
+  process.stdout.write(util.format('WARN:', ...args) + '\n');
+};
+
+const DatabaseService = require('./services/databaseService.cjs');
+
 const PedigreeService = require('./services/PedigreeService.cjs');
-const FileService = require('./services/FileService.cjs');
+const FileService = require('./services/fileService.cjs');
 const NotificationService = require('./services/NotificationService.cjs');
 const BackupService = require('./services/BackupService.cjs');
+const MediaService = require('./services/mediaService.cjs');
+
+
+// Keep a global reference of the window object, if you don't, the window will
+// be closed automatically when the JavaScript object is garbage collected.
 
 const isDev = true
 let mainWindow;
@@ -67,10 +109,25 @@ mainWindow.webContents.setWindowOpenHandler((details) => {
 
 }
 
+const MEDIA_ROOT = () => path.join(app.getPath('userData'), 'goat-tracker-media');
 // --- App Lifecycle ---
 app.whenReady().then(() => {
   createWindow();
   initializeServices(mainWindow);
+
+protocol.registerFileProtocol('app', (request, callback) => {
+    try {
+      const url = decodeURIComponent(request.url.replace('app://', ''));
+      // prevent path traversal
+      const safe = path.normalize(url).replace(/^(\.\.(\/|\\|$))+/, '');
+      const mediaRoot = path.join(app.getPath('userData'), 'goat-tracker-media');
+      const filePath = path.join(mediaRoot, safe);
+      callback({ path: filePath });
+    } catch (err) {
+      console.error('app protocol error', err);
+      callback({ error: -6 }); // FILE_NOT_FOUND
+    }
+  });
 
   // Auto backup scheduling
   backupService.getBackupSettings().then(settings => {
@@ -86,7 +143,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 // Database IPC handlers
-ipcMain.handle('db:getGoats', () => databaseService.getAll('goats'));
+ipcMain.handle('db:getGoats', async () => {
+  const goats = await databaseService.getAll('goats');
+  if (!goats) return [];
+  return goats
+});
 ipcMain.handle('db:addGoat', (event, goat) => databaseService.add('goats', goat));
 ipcMain.handle('db:updateGoat', (event, id, updates) => databaseService.update('goats', id, updates));
 ipcMain.handle('db:deleteGoat', (event, id) => databaseService.delete('goats', id));
@@ -124,7 +185,75 @@ ipcMain.handle('db:deleteFeedPlan', (event, id) => databaseService.deleteFeedPla
 
 ipcMain.handle('db:getFeedLogs', () => databaseService.getFeedLogs());
 ipcMain.handle('db:addFeedLog', (event, log) => databaseService.addFeedLog(log));
+ipcMain.handle('db:updateFeedLog', (event, id, updates) => databaseService.updateFeedLog(id, updates));
+ipcMain.handle('db:deleteFeedLog', (event, id) => databaseService.deleteFeedLog(id));
 
+// Load services after app ready (they use app.getPath)
+
+// -------------------- IPC handlers (delegate to mediaService) --------------------
+ipcMain.handle('media:add-via-dialog', async (event, goatId, category, description, tags) => {
+  return await MediaService.addViaDialog(goatId, category, description, tags);
+});
+
+ipcMain.handle('media:upload-start', async (event, meta) => {
+  return await MediaService.uploadStart(meta);
+});
+
+ipcMain.on('media:upload-chunk', (event, uploadId, chunk) => {
+  MediaService.uploadChunk(uploadId, chunk);
+});
+
+ipcMain.handle('media:upload-complete', async (event, uploadId) => {
+  return await MediaService.uploadComplete(uploadId);
+});
+
+ipcMain.handle('media:getByGoatId', async (event, goatId) => {
+  return await MediaService.getByGoatId(goatId);
+});
+
+ipcMain.handle('media:update', async (event, id, updates) => {
+  return await MediaService.updateMedia(id, updates);
+});
+
+ipcMain.handle('media:delete', async (event, id) => {
+  return await MediaService.deleteMedia(id);
+});
+
+ipcMain.handle('media:set-primary', async (event, goatId, mediaId) => {
+  return await MediaService.setPrimary(goatId, mediaId);
+});
+
+ipcMain.handle('media:download', async (event, mediaId) => {
+  return await MediaService.downloadMedia(mediaId);
+});
+
+ipcMain.handle('media:get-file-path', async (event, mediaId) => {
+  return await MediaService.getMediaFilePath(mediaId);
+});
+
+ipcMain.handle('media:open-file', async (event, mediaId) => {
+  return await MediaService.openMediaFile(mediaId);
+});
+
+ipcMain.handle('media:reveal-file', async (event, mediaId) => {
+  return await MediaService.revealMediaFileInFolder(mediaId);
+});
+ipcMain.handle('media:get-thumbnails', async () => {
+  return await MediaService.getThumbnails();
+});
+
+// ----------------- Optional: expose file helpers for read/write -----------------
+ipcMain.handle('file:showSaveDialog', (event, opts) => dialog.showSaveDialog(opts));
+ipcMain.handle('file:showOpenDialog', (event, opts) => dialog.showOpenDialog(opts));
+ipcMain.handle('file:write', (event, filePath, data) => {
+  try { fs.writeFileSync(filePath, data); return true; } catch (e) { console.error(e); return false; }
+});
+ipcMain.handle('file:read', (event, filePath) => {
+  try { return fs.readFileSync(filePath, 'utf8'); } catch (e) { console.error(e); return null; }
+});
+ipcMain.handle('file:delete', (event, filePath) => {
+  try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); return true; } catch (e) { console.error(e); return false; }
+});
 // Pedigree IPC handlers
 ipcMain.handle('pedigree:getTree', async (event, goatId, generations) => {
   return await pedigreeService.getPedigreeTree(goatId, generations);
@@ -138,13 +267,6 @@ ipcMain.handle('pedigree:calculateInbreedingRisk', async (event, sireId, damId) 
 ipcMain.handle('db:exportData', () => databaseService.exportData());
 ipcMain.handle('db:importData', (event, data) => databaseService.importData(JSON.parse(data)));
 ipcMain.handle('db:clearAll', () => databaseService.clearAll());
-
-// File system IPC handlers
-ipcMain.handle('dialog:showSaveDialog', (event, options) => fileService.showSaveDialog(options));
-ipcMain.handle('dialog:showOpenDialog', (event, options) => fileService.showOpenDialog(options));
-ipcMain.handle('fs:writeFile', (event, filePath, data) => fileService.writeFile(filePath, data));
-ipcMain.handle('fs:readFile', (event, filePath) => fileService.readFile(filePath));
-
 // Notification IPC handlers
 ipcMain.handle('notifications:showNotification', (event, options) => {
   notificationService.showNotification(options);
@@ -184,4 +306,13 @@ ipcMain.handle('backup:saveSettings', async (event, settings) => {
 
 ipcMain.handle('backup:selectPath', async () => {
   return await backupService.selectBackupPath(mainWindow);
+});
+
+ipcMain.handle('logs:get', async () => {
+  try {
+    return fs.readFileSync(logFile, 'utf8');
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
 });

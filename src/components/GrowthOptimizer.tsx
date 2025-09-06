@@ -110,7 +110,7 @@ export default function GrowthOptimizer() {
     }
 
     const ageInMonths = Math.floor(
-      (new Date().getTime() - new Date(goat.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 30)
+      (new Date().getTime() - new Date(goat.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30)
     );
 
     const breedStandard = BREED_STANDARDS[goat.breed.toLowerCase()] || BREED_STANDARDS.boer;

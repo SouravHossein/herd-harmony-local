@@ -2,13 +2,13 @@
 export interface Goat {
   id: string;
   name: string;
-  nickname?: string;
+  // nickname?: string;
   tagNumber: string;
   breed: string;
   birthDate: Date;
-  dateOfBirth: Date; // Alias for compatibility
   birthWeight?: number;
   gender: 'male' | 'female';
+  castrated?: boolean;
   status: 'active' | 'sold' | 'deceased' | 'archived';
   breedingStatus: '' | 'pregnant' | 'lactating' | 'resting' | 'kid' | 'active';
   fatherId?: string;
@@ -16,19 +16,21 @@ export interface Goat {
   color?: string;
   hornStatus?: 'horned' | 'polled' | 'disbudded';
   currentWeight?: number;
-  acquisitionType?: 'born' | 'bought';
   isFavorite?: boolean;
   notes?: string;
   tags?: string[];
-  mediaFiles?: MediaFile[];
   imageId?: string; // For image storage
   photoPath?: string; // Legacy support
+  acquisitionType?: 'born' | 'bought' | 'gifted' | 'rented';
+  farmId?: string;
+  partition?: string;
   // Genetic traits for pedigree
   genetics?: {
     coatColor: string;
     hornStatus: 'horned' | 'polled' | 'disbudded';
     fertilityScore: number;
     milkYieldGenetics?: number;
+    hornGenotype?: 'PP' | 'Ph' | 'hh';
   };
   createdAt: Date;
   updatedAt: Date;
@@ -84,25 +86,39 @@ export interface BreedingRecord {
   updatedAt: Date;
 }
 
+// src/types/goat.ts
+export type MediaKind = 'image' | 'video' | 'document';
+
 export interface MediaFile {
   id: string;
-  type: 'image' | 'video' | 'document';
-  url: string;
+  type: MediaKind;
+  goatId: string;
+  // NOTE: stored in DB as relative path like "goatId/filename.mp4"
+  url: string;            // when read by renderer via IPC this will be app://<relativePath> (string)
+  thumbnailUrl?: string;  // when returned by IPC this will be a data URL (string) or null
+  primary: boolean;
   filename: string;
-  uploadDate: Date;
-  timestamp: Date; // Alias for uploadDate
+  uploadDate: string | Date;
+  timestamp: string | Date;
   category?: 'birth' | 'health' | 'growth' | 'breeding' | 'general' | 'milestone' | 'weaning';
   tags?: string[];
   description?: string;
-  size?: number;
-  fileSize?: number; // Alias for size
-  createdAt: Date;
+  size?: number;    // bytes
+  createdAt: string | Date;
 }
+
+export interface MediaUploadFile {
+  name: string;
+  type?: string;
+  data?: string; // optional dataURL for small files (not used in chunked flow)
+}
+
+
 
 export interface Feed {
   id: string;
   name: string;
-  type: 'hay' | 'grain' | 'pellets' | 'supplement' | 'mineral' | 'other';
+  type: 'grass' | 'hay' | 'grain' | 'pellets' | 'supplement' | 'mineral' | 'other';
   brand?: string;
   protein?: number;
   fiber?: number;
@@ -148,13 +164,31 @@ export interface FeedPlanItem {
   frequency: 'daily' | 'weekly' | 'monthly';
   timesPerDay?: number;
 }
+export interface Farm {
+  id: string;
+  name: string;
+  location: string;
+  partitions: number;
+  size: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+export interface KnownFarmer {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+  location?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface FeedLog {
   id: string;
   goatId: string;
   feedId: string;
-  amount: number;
-  amountUsed?: number; // Alias for amount
+  amountUsed?: number; 
   unit: string;
   date: Date;
   cost?: number;
@@ -194,28 +228,4 @@ export interface GrowthAnalytics {
   breedComparison: Record<string, number>;
 }
 
-// Pedigree types
-export interface PedigreeNode {
-  id: string;
-  name: string;
-  tagNumber: string;
-  photo?: string;
-  traits: {
-    coatColor: string;
-    hornStatus: boolean;
-    fertilityScore: number;
-  };
-  parents: PedigreeNode[];
-  children: PedigreeNode[];
-  generation: number;
-  position: { x: number; y: number };
-}
 
-export interface PedigreeRecord {
-  id: string;
-  goatId: string;
-  parentId: string;
-  relationType: 'father' | 'mother';
-  createdAt: Date;
-  updatedAt: Date;
-}

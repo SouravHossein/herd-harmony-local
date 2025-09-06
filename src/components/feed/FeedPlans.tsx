@@ -114,7 +114,9 @@ export default function FeedPlans({ feeds, feedPlans, onAddFeedPlan, onUpdateFee
       name: plan.name,
       groupType: plan.groupType,
       feedItems: plan.feedItems,
-      totalCostPerDay: plan.totalCostPerDay
+      totalCostPerDay: plan.totalCostPerDay,
+      feeds: plan.feeds
+      
     });
     setIsFormOpen(true);
   };

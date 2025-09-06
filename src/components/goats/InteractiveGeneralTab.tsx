@@ -58,14 +58,14 @@ export function InteractiveGeneralTab({ goat, onUpdate }: InteractiveGeneralTabP
                 onChange={(e) => setEditedGoat({ ...editedGoat, name: e.target.value })}
               />
             </div>
-            <div>
+            {/* <div>
               <Label htmlFor="nickname">Nickname</Label>
               <Input
                 id="nickname"
                 value={editedGoat.nickname || ''}
                 onChange={(e) => setEditedGoat({ ...editedGoat, nickname: e.target.value })}
               />
-            </div>
+            </div> */}
           </div>
           
           <div className="grid grid-cols-2 gap-4">
@@ -123,12 +123,12 @@ export function InteractiveGeneralTab({ goat, onUpdate }: InteractiveGeneralTabP
               <p className="font-medium">{goat.name}</p>
             </div>
             
-            {goat.nickname && (
+            {/* {goat.nickname && (
               <div>
                 <p className="text-sm text-muted-foreground">Nickname</p>
                 <p className="font-medium">"{goat.nickname}"</p>
               </div>
-            )}
+            )} */}
             
             <div>
               <p className="text-sm text-muted-foreground">Tag Number</p>
@@ -151,7 +151,7 @@ export function InteractiveGeneralTab({ goat, onUpdate }: InteractiveGeneralTabP
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Date of Birth</p>
-              <p className="font-medium">{new Date(goat.dateOfBirth).toLocaleDateString()}</p>
+              <p className="font-medium">{new Date(goat.birthDate).toLocaleDateString()}</p>
             </div>
             
             <div>

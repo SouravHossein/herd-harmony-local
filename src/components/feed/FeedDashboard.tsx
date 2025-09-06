@@ -9,73 +9,35 @@ import { AlertTriangle, TrendingUp, Package, DollarSign, Users, Calendar } from 
 import FeedInventory from './FeedInventory';
 import FeedPlans from './FeedPlans';
 import { FeedUsage } from './FeedUsage';
-import { useGoatData } from '@/hooks/useDatabase';
+import { useGoatContext } from '@/context/GoatContext';
 import { NutritionAI } from '@/lib/nutritionAI';
 import { Feed, FeedPlan, FeedLog } from '@/types/goat';
 
 export const FeedDashboard: React.FC = () => {
-  const { goats, financeRecords } = useGoatData();
-  const [feeds, setFeeds] = useState<Feed[]>([]);
-  const [feedPlans, setFeedPlans] = useState<FeedPlan[]>([]);
-  const [feedLogs, setFeedLogs] = useState<FeedLog[]>([]);
+  const { 
+    goats, 
+    financeRecords, 
+    feeds, 
+    feedPlans, 
+    feedLogs, 
+    addFeed, 
+    updateFeed, 
+    deleteFeed, 
+    addFeedPlan, 
+    updateFeedPlan, 
+    deleteFeedPlan, 
+    addFeedLog, 
+    updateFeedLog, 
+    deleteFeedLog 
+  } = useGoatContext();
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  // Mock functions for now - in real app these would use database
-  const handleAddFeed = (feed: Omit<Feed, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newFeed: Feed = {
-      ...feed,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    setFeeds([...feeds, newFeed]);
-  };
-
-  const handleUpdateFeed = (id: string, updates: Partial<Feed>) => {
-    setFeeds(feeds.map(feed => 
-      feed.id === id ? { ...feed, ...updates, updatedAt: new Date() } : feed
-    ));
-  };
-
-  const handleDeleteFeed = (id: string) => {
-    setFeeds(feeds.filter(feed => feed.id !== id));
-  };
-
-  const handleAddFeedPlan = (plan: Omit<FeedPlan, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newPlan: FeedPlan = {
-      ...plan,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    setFeedPlans([...feedPlans, newPlan]);
-  };
-
-  const handleUpdateFeedPlan = (id: string, updates: Partial<FeedPlan>) => {
-    setFeedPlans(feedPlans.map(plan => 
-      plan.id === id ? { ...plan, ...updates, updatedAt: new Date() } : plan
-    ));
-  };
-
-  const handleDeleteFeedPlan = (id: string) => {
-    setFeedPlans(feedPlans.filter(plan => plan.id !== id));
-  };
-
-  const handleAddFeedLog = (log: Omit<FeedLog, 'id' | 'createdAt'>) => {
-    const newLog: FeedLog = {
-      ...log,
-      id: Date.now().toString(),
-      createdAt: new Date()
-    };
-    setFeedLogs([...feedLogs, newLog]);
-  };
 
   // Calculate statistics
   const totalFeedValue = feeds.reduce((sum, feed) => sum + (feed.stockKg * feed.costPerKg), 0);
   const lowStockFeeds = feeds.filter(feed => feed.stockKg < 10);
   const expiringFeeds = feeds.filter(feed => {
     if (!feed.expiryDate) return false;
-    const days = Math.ceil((feed.expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    const days = Math.ceil((new Date(feed.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return days <= 7 && days >= 0;
   });
 
@@ -252,9 +214,9 @@ export const FeedDashboard: React.FC = () => {
         <TabsContent value="inventory">
           <FeedInventory
             feeds={feeds}
-            onAddFeed={handleAddFeed}
-            onUpdateFeed={handleUpdateFeed}
-            onDeleteFeed={handleDeleteFeed}
+            onAddFeed={addFeed}
+            onUpdateFeed={updateFeed}
+            onDeleteFeed={deleteFeed}
           />
         </TabsContent>
 
@@ -262,9 +224,9 @@ export const FeedDashboard: React.FC = () => {
           <FeedPlans
             feeds={feeds}
             feedPlans={feedPlans}
-            onAddFeedPlan={handleAddFeedPlan}
-            onUpdateFeedPlan={handleUpdateFeedPlan}
-            onDeleteFeedPlan={handleDeleteFeedPlan}
+            onAddFeedPlan={addFeedPlan}
+            onUpdateFeedPlan={updateFeedPlan}
+            onDeleteFeedPlan={deleteFeedPlan}
           />
         </TabsContent>
 
@@ -274,7 +236,9 @@ export const FeedDashboard: React.FC = () => {
             feedPlans={feedPlans}
             feedLogs={feedLogs}
             goats={goats}
-            onAddFeedLog={handleAddFeedLog}
+            onAddFeedLog={addFeedLog}
+            onUpdateFeedLog={updateFeedLog}
+            onDeleteFeedLog={deleteFeedLog}
           />
         </TabsContent>
       </Tabs>

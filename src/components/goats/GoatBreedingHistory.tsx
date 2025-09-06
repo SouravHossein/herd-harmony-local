@@ -230,10 +230,10 @@ export default function GoatBreedingHistory({ goat }: GoatBreedingHistoryProps) 
                             </Button>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Born: {kid.dateOfBirth.toLocaleDateString()}
+                            Born: {kid.birthDate.toLocaleDateString()}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Age: {getAge(kid.dateOfBirth)}
+                            Age: {getAge(kid.birthDate)}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <Badge variant="outline" className="text-xs">

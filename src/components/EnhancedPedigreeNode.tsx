@@ -52,7 +52,7 @@ function EnhancedPedigreeNode({ data }: { data: EnhancedPedigreeNodeData }) {
   }
 
   const age = Math.floor(
-    (new Date().getTime() - data.goat.dateOfBirth.getTime()) / 
+    (new Date().getTime() - data.goat.birthDate.getTime()) / 
     (1000 * 60 * 60 * 24 * 365)
   );
 

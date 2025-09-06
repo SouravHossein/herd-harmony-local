@@ -1,6 +1,7 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+console.log('Exposing electronAPI to main ...');
 contextBridge.exposeInMainWorld('electronAPI', {
   // Database operations for goats
   getGoats: () => ipcRenderer.invoke('db:getGoats'),
@@ -47,21 +48,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Database operations for feed logs
   getFeedLogs: () => ipcRenderer.invoke('db:getFeedLogs'),
   addFeedLog: (log) => ipcRenderer.invoke('db:addFeedLog', log),
+  updateFeedLog: (id, updates) => ipcRenderer.invoke('db:updateFeedLog', id, updates),
+  deleteFeedLog: (id) => ipcRenderer.invoke('db:deleteFeedLog', id),
 
   // Pedigree operations
   getPedigreeTree: (goatId, generations) => ipcRenderer.invoke('pedigree:getTree', goatId, generations),
   calculateInbreedingRisk: (sireId, damId) => ipcRenderer.invoke('pedigree:calculateInbreedingRisk', sireId, damId),
+  
+
+
+
 
   // Data management
   exportData: () => ipcRenderer.invoke('db:exportData'),
   importData: (data) => ipcRenderer.invoke('db:importData', data),
   clearAll: () => ipcRenderer.invoke('db:clearAll'),
 
-  // File system operations
-  showSaveDialog: (options) => ipcRenderer.invoke('dialog:showSaveDialog', options),
-  showOpenDialog: (options) => ipcRenderer.invoke('dialog:showOpenDialog', options),
-  writeFile: (filePath, data) => ipcRenderer.invoke('fs:writeFile', filePath, data),
-  readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
+
 
   // Backup operations
   createBackup: (password) => ipcRenderer.invoke('backup:create', password),
@@ -72,6 +75,32 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveBackupSettings: (settings) => ipcRenderer.invoke('backup:saveSettings', settings),
   selectBackupPath: () => ipcRenderer.invoke('backup:selectPath'),
 
+  
+  
+  
+  getMediaByGoatId: (goatId) => ipcRenderer.invoke('media:getByGoatId', goatId),
+  getThumbnails: () => ipcRenderer.invoke('media:get-thumbnails'),
+  addMediaViaDialog: (goatId, category, description, tags) => ipcRenderer.invoke('media:add-via-dialog', goatId, category, description, tags),
+  uploadStart: (meta) => ipcRenderer.invoke('media:upload-start', meta),
+  uploadChunk: (uploadId, chunk) => ipcRenderer.send('media:upload-chunk', uploadId, chunk),
+  uploadComplete: (uploadId) => ipcRenderer.invoke('media:upload-complete', uploadId),
+  updateMedia: (id, updates) => ipcRenderer.invoke('media:update', id, updates),
+  deleteMedia: (id) => ipcRenderer.invoke('media:delete', id),
+  setPrimaryMedia: (goatId, mediaId) => ipcRenderer.invoke('media:set-primary', goatId, mediaId),
+  downloadMedia: (mediaId) => ipcRenderer.invoke('media:download', mediaId),
+  getMediaFilePath: (mediaId) => ipcRenderer.invoke('media:get-file-path', mediaId),
+  openMediaFile: (mediaId) => ipcRenderer.invoke('media:open-file', mediaId),
+  revealMediaFileInFolder: (mediaId) => ipcRenderer.invoke('media:reveal-file', mediaId),
+  
+  // file helpers (optional)
+  showSaveDialog: (opts) => ipcRenderer.invoke('file:showSaveDialog', opts),
+  showOpenDialog: (opts) => ipcRenderer.invoke('file:showOpenDialog', opts),
+  writeFile: (p, data) => ipcRenderer.invoke('file:write', p, data),
+  readFile: (p) => ipcRenderer.invoke('file:read', p),
+  deleteFile: (p) => ipcRenderer.invoke('file:delete', p),
+  
   // Check if running in Electron
-  isElectron: true
+  isElectron: true,
+
+
 });

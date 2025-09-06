@@ -61,7 +61,7 @@ export default function GoatLifeTimeline({ goat, className = "" }: GoatLifeTimel
     // Add key milestones
     events.push({
       id: 'birth',
-      date: goat.dateOfBirth,
+      date: goat.birthDate,
       type: 'milestone',
       title: 'Birth',
       description: `${goat.name} was born`,
@@ -70,7 +70,7 @@ export default function GoatLifeTimeline({ goat, className = "" }: GoatLifeTimel
     });
 
     // Add weaning milestone (typically 8-12 weeks after birth)
-    const weaningDate = new Date(goat.dateOfBirth);
+    const weaningDate = new Date(goat.birthDate);
     weaningDate.setDate(weaningDate.getDate() + 70); // ~10 weeks
     events.push({
       id: 'weaning',
@@ -121,7 +121,7 @@ export default function GoatLifeTimeline({ goat, className = "" }: GoatLifeTimel
   };
 
   const getAgeAtEvent = (eventDate: Date) => {
-    const ageMs = eventDate.getTime() - goat.dateOfBirth.getTime();
+    const ageMs = eventDate.getTime() - goat.birthDate.getTime();
     const ageMonths = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 30.44));
     const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
     

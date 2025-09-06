@@ -37,7 +37,7 @@ export function DataManagement() {
   const handleExportData = async () => {
     try {
       const dataJson = await exportData();
-      const blob = new Blob([dataJson], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(dataJson, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement('a');
@@ -138,7 +138,7 @@ export function DataManagement() {
           goat.tagNumber,
           goat.breed,
           goat.gender,
-          new Date(goat.dateOfBirth).toLocaleDateString(),
+          new Date(goat.birthDate).toLocaleDateString(),
           goat.color,
           goat.status,
           goat.hornStatus,

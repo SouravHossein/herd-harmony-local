@@ -1,4 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { FinanceRecord } from '@/types/finance';
+import { MediaFile, MediaUploadFile } from '@/types/goat';
+import { get } from 'http';
 import { useState, useEffect } from 'react';
 
 declare global {
@@ -9,19 +14,19 @@ declare global {
       addGoat: (goat: any) => Promise<any>;
       updateGoat: (id: string, updates: any) => Promise<any>;
       deleteGoat: (id: string) => Promise<boolean>;
-      
+
       // Weight records
       getWeightRecords: () => Promise<any[]>;
       addWeightRecord: (record: any) => Promise<any>;
       updateWeightRecord: (id: string, updates: any) => Promise<any>;
       deleteWeightRecord: (id: string) => Promise<boolean>;
-      
+
       // Health records
       getHealthRecords: () => Promise<any[]>;
       addHealthRecord: (record: any) => Promise<any>;
       updateHealthRecord: (id: string, updates: any) => Promise<any>;
       deleteHealthRecord: (id: string) => Promise<boolean>;
-      
+
       // Breeding records
       getBreedingRecords: () => Promise<any[]>;
       addBreedingRecord: (record: any) => Promise<any>;
@@ -49,7 +54,9 @@ declare global {
       // Feed log operations
       getFeedLogs: () => Promise<any[]>;
       addFeedLog: (log: any) => Promise<any>;
-      
+      updateFeedLog: (id: string, updates: any) => Promise<any>;
+      deleteFeedLog: (id: string) => Promise<boolean>;
+
       // Data management
       exportData: () => Promise<any>;
       importData: (data: any) => Promise<boolean>;
@@ -58,12 +65,32 @@ declare global {
       // Pedigree operations
       getPedigreeTree: (goatId: string, generations: number) => Promise<any>;
       calculateInbreedingRisk: (sireId: string, damId: string) => Promise<any>;
+// Media operations
+      getMediaByGoatId: (goatId: string) => Promise<MediaFile[]>;
+        getThumbnails: () => Promise<{ goatId: string; thumbnailUrl: string | null }[]>;
+
+      addMediaViaDialog: (goatId: string, category: string, description?: string, tags?: string[]) => Promise<MediaFile[]>;
+      uploadStart: (meta: { goatId: string; filename: string; totalSize: number; category: string; description?: string; tags?: string[] }) => Promise<{ uploadId: string }>;
+      uploadChunk: (uploadId: string, chunk: ArrayBuffer) => Promise<boolean>;
+      uploadComplete: (uploadId: string) => Promise<MediaFile | null>;
+      updateMedia: (mediaId: string, updates: Partial<MediaFile>) => Promise<MediaFile | null>;
+      deleteMedia: (mediaId: string) => Promise<boolean>;
+      downloadMedia: (mediaId: string) => Promise<{ success: boolean; error?: string }>;
+      setPrimaryMedia: (goatId: string, mediaId: string) => Promise<MediaFile | null>;
+
+      // File operations for UI
+      getMediaFilePath: (mediaId: string) => Promise<string | null>;
+      openMediaFile: (mediaId: string) => Promise<boolean>;
+      revealMediaFileInFolder: (mediaId: string) => Promise<boolean>;
+
       
       // File operations
       showSaveDialog: (options: any) => Promise<any>;
       showOpenDialog: (options: any) => Promise<any>;
       writeFile: (filePath: string, data: string) => Promise<boolean>;
       readFile: (filePath: string) => Promise<string | null>;
+      deleteFile: (filePath: string) => Promise<boolean>;
+      
       
       // Backup operations
       createBackup: (password: string) => Promise<{ success: boolean; filename?: string; error?: string }>;
@@ -73,7 +100,8 @@ declare global {
       getBackupSettings: () => Promise<any>;
       saveBackupSettings: (settings: any) => Promise<boolean>;
       selectBackupPath: () => Promise<{ path?: string; canceled?: boolean }>;
-      
+ 
+
       isElectron: boolean;
     };
   }
@@ -96,7 +124,7 @@ export function useDatabase<T>(tableName: string, initialValue: T) {
   const loadData = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       let result;
       switch (tableName) {
@@ -174,13 +202,13 @@ export function useGoatData() {
       await goats.reload();
       return newGoat;
     },
-    
+
     updateGoat: async (id: string, updates: any) => {
       const updatedGoat = await window.electronAPI!.updateGoat(id, updates);
       await goats.reload();
       return updatedGoat;
     },
-    
+
     deleteGoat: async (id: string) => {
       const success = await window.electronAPI!.deleteGoat(id);
       if (success) {
@@ -257,7 +285,7 @@ export function useGoatData() {
     },
 
     // Finance record operations
-    addFinanceRecord: async (record: any) => {
+    addFinanceRecord: async (record: FinanceRecord) => {
       const newRecord = await window.electronAPI!.addFinanceRecord(record);
       await financeRecords.reload();
       return newRecord;
@@ -325,6 +353,60 @@ export function useGoatData() {
       await feedLogs.reload();
       return newLog;
     },
+    updateFeedLog: async (id: string, updates: any) => {
+      const updatedLog = await window.electronAPI!.updateFeedLog(id, updates);
+      await feedLogs.reload();
+      return updatedLog;
+    },
+    deleteFeedLog: async (id: string) => {
+      const success = await window.electronAPI!.deleteFeedLog(id);
+      if (success) {
+        await feedLogs.reload();
+      }
+      return success;
+    },
+/** Media Management */
+    getMediaByGoatId: async (goatId: string) => {
+      return await window.electronAPI!.getMediaByGoatId(goatId);
+    },
+    getThumbnails: async () => {
+      return await window.electronAPI!.getThumbnails();
+    },
+    addMediaViaDialog: async (goatId: string, category: string, description?: string, tags?: string[]) => {
+      const res = await window.electronAPI!.addMediaViaDialog(goatId, category, description, tags);
+      await goats.reload();
+      return res;
+    },
+    updateMedia: async (mediaId: string, updates: Partial<MediaFile>) => {
+      const updated = await window.electronAPI!.updateMedia(mediaId, updates);
+      await goats.reload();
+      return updated;
+    },
+    deleteMedia: async (mediaId: string) => {
+      const ok = await window.electronAPI!.deleteMedia(mediaId);
+      if (ok) await goats.reload();
+      return ok;
+    },
+    setPrimaryMedia: async (goatId: string, mediaId: string) => {
+      const updated = await window.electronAPI!.setPrimaryMedia(goatId, mediaId);
+      await goats.reload();
+      return updated;
+    },
+    downloadMedia: async (mediaId: string) => {
+      return await window.electronAPI!.downloadMedia(mediaId);
+    },
+
+    /** Chunked Upload for Large Files */
+    uploadStart: async (meta: { goatId: string; filename: string; totalSize: number; category: string; description?: string; tags?: string[] }) => {
+      return await window.electronAPI!.uploadStart(meta);
+    },
+    uploadChunk: async (uploadId: string, chunk: ArrayBuffer) => {
+      return await window.electronAPI!.uploadChunk(uploadId, chunk);
+    },
+    uploadComplete: async (uploadId: string) => {
+      return await window.electronAPI!.uploadComplete(uploadId);
+    },
+
 
     // Pedigree operations
     getPedigreeTree: async (goatId: string, generations: number) => {

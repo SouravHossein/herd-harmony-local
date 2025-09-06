@@ -25,7 +25,7 @@ export default function GoatTimeline({ goat, weightRecords, healthRecords }: Goa
   const events: TimelineEvent[] = [
     {
       id: 'birth',
-      date: goat.dateOfBirth,
+      date: goat.birthDate,
       type: 'birth',
       title: 'Born',
       description: `${goat.name} was born`,

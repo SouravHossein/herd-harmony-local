@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
+// const generateId=require('./../helper/generateId.cjs')
 
 class DatabaseService {
   constructor() {
@@ -17,7 +18,7 @@ class DatabaseService {
   }
 
   initDatabase() {
-    const tables = ['goats', 'weightRecords', 'healthRecords', 'breedingRecords', 'financeRecords', 'feeds', 'feedPlans', 'feedLogs'];
+    const tables = ['goats', 'weightRecords', 'healthRecords', 'breedingRecords', 'financeRecords', 'feeds', 'feedPlans', 'feedLogs', 'media'];
     tables.forEach(table => {
       const tablePath = path.join(this.dbPath, `${table}.json`);
       if (!fs.existsSync(tablePath)) {
@@ -61,6 +62,20 @@ class DatabaseService {
     const newItem = { ...item, id: this.generateId() };
     data.push(newItem);
     this.writeTable(tableName, data);
+
+    if (tableName === 'healthRecords' && newItem.cost && newItem.cost > 0) {
+      const financeRecord = {
+        type: 'expense',
+        category: newItem.type.charAt(0).toUpperCase() + newItem.type.slice(1), // Capitalize type
+        amount: newItem.cost,
+        date: newItem.date,
+        description: `Health record: ${newItem.description}`,
+        goatId: newItem.goatId,
+        healthRecordId: newItem.id,
+      };
+      this.addFinanceRecord(financeRecord);
+    }
+
     return newItem;
   }
 
@@ -68,18 +83,58 @@ class DatabaseService {
     const data = this.readTable(tableName);
     const index = data.findIndex(item => item.id === id);
     if (index !== -1) {
+      const originalItem = data[index];
       data[index] = { ...data[index], ...updates };
       this.writeTable(tableName, data);
+
+      if (tableName === 'healthRecords') {
+        const updatedItem = data[index];
+        const financeRecords = this.readTable('financeRecords');
+        const existingFinanceRecord = financeRecords.find(fr => fr.healthRecordId === id);
+
+        if (updatedItem.cost && updatedItem.cost > 0) {
+          const financeRecordData = {
+            type: 'expense',
+            category: updatedItem.type.charAt(0).toUpperCase() + updatedItem.type.slice(1),
+            amount: updatedItem.cost,
+            date: updatedItem.date,
+            description: `Health record: ${updatedItem.description}`,
+            goatId: updatedItem.goatId,
+            healthRecordId: updatedItem.id,
+          };
+
+          if (existingFinanceRecord) {
+            this.updateFinanceRecord(existingFinanceRecord.id, financeRecordData);
+          } else {
+            this.addFinanceRecord(financeRecordData);
+          }
+        } else if (existingFinanceRecord) {
+          this.deleteFinanceRecord(existingFinanceRecord.id);
+        }
+      }
+
       return data[index];
     }
     return null;
   }
 
-  delete(tableName, id) {
+    delete(tableName, id) {
     const data = this.readTable(tableName);
+    const itemToDelete = data.find(item => item.id === id);
+    if (!itemToDelete) return null;
+
     const filteredData = data.filter(item => item.id !== id);
     this.writeTable(tableName, filteredData);
-    return filteredData.length < data.length;
+
+    if (tableName === 'healthRecords' && itemToDelete) {
+      const financeRecords = this.readTable('financeRecords');
+      const existingFinanceRecord = financeRecords.find(fr => fr.healthRecordId === id);
+      if (existingFinanceRecord) {
+        this.deleteFinanceRecord(existingFinanceRecord.id);
+      }
+    }
+
+    return itemToDelete;
   }
 
   addFinanceRecord(record) {
@@ -132,6 +187,19 @@ class DatabaseService {
     };
     data.push(newFeed);
     this.writeTable('feeds', data);
+
+    if (newFeed.cost && newFeed.cost > 0) {
+      const financeRecord = {
+        type: 'expense',
+        category: 'Feed',
+        amount: newFeed.cost,
+        date: newFeed.purchaseDate || new Date().toISOString().split('T')[0],
+        description: `Purchased ${newFeed.quantity || ''} of ${newFeed.type}`,
+        feedId: newFeed.id,
+      };
+      this.addFinanceRecord(financeRecord);
+    }
+
     return newFeed;
   }
 
@@ -145,6 +213,30 @@ class DatabaseService {
         updatedAt: new Date().toISOString() 
       };
       this.writeTable('feeds', data);
+      
+      const updatedFeed = data[index];
+      const financeRecords = this.readTable('financeRecords');
+      const existingFinanceRecord = financeRecords.find(fr => fr.feedId === id);
+
+      if (updatedFeed.cost && updatedFeed.cost > 0) {
+        const financeRecordData = {
+          type: 'expense',
+          category: 'Feed',
+          amount: updatedFeed.cost,
+          date: updatedFeed.purchaseDate || new Date().toISOString().split('T')[0],
+          description: `Purchased ${updatedFeed.quantity || ''} of ${updatedFeed.type}`,
+          feedId: updatedFeed.id,
+        };
+
+        if (existingFinanceRecord) {
+          this.updateFinanceRecord(existingFinanceRecord.id, financeRecordData);
+        } else {
+          this.addFinanceRecord(financeRecordData);
+        }
+      } else if (existingFinanceRecord) {
+        this.deleteFinanceRecord(existingFinanceRecord.id);
+      }
+
       return data[index];
     }
     return null;
@@ -152,8 +244,18 @@ class DatabaseService {
 
   deleteFeed(id) {
     const data = this.readTable('feeds');
+    const itemToDelete = data.find(item => item.id === id);
     const filteredData = data.filter(feed => feed.id !== id);
     this.writeTable('feeds', filteredData);
+
+    if (itemToDelete) {
+      const financeRecords = this.readTable('financeRecords');
+      const existingFinanceRecord = financeRecords.find(fr => fr.feedId === id);
+      if (existingFinanceRecord) {
+        this.deleteFinanceRecord(existingFinanceRecord.id);
+      }
+    }
+
     return filteredData.length < data.length;
   }
 
@@ -214,8 +316,44 @@ class DatabaseService {
     return newLog;
   }
 
+  updateFeedLog(id, updates) {
+    const data = this.readTable('feedLogs');
+    const index = data.findIndex(log => log.id === id);
+    if (index !== -1) {
+      data[index] = { ...data[index], ...updates };
+      this.writeTable('feedLogs', data);
+      return data[index];
+    }
+    return null;
+  }
+
+  deleteFeedLog(id) {
+    const data = this.readTable('feedLogs');
+    const filteredData = data.filter(log => log.id !== id);
+    this.writeTable('feedLogs', filteredData);
+    return filteredData.length < data.length;
+  }
+
   getFeedLogs() {
     return this.readTable('feedLogs');
+  }
+
+  // Media management methods
+  addMedia(media) {
+    return this.add('media', media);
+  }
+
+  getMediaByGoatId(goatId) {
+    const allMedia = this.readTable('media');
+    return allMedia.filter(mediaItem => mediaItem.goatId === goatId);
+  }
+
+  updateMedia(id, updates) {
+    return this.update('media', id, updates);
+  }
+
+  deleteMedia(id) {
+    return this.delete('media', id);
   }
 
   exportData() {
@@ -228,6 +366,7 @@ class DatabaseService {
       feeds: this.readTable('feeds'),
       feedPlans: this.readTable('feedPlans'),
       feedLogs: this.readTable('feedLogs'),
+      media: this.readTable('media'),
       exportDate: new Date().toISOString(),
       version: '1.0'
     };
@@ -244,6 +383,7 @@ class DatabaseService {
       this.writeTable('feeds', data.feeds || []);
       this.writeTable('feedPlans', data.feedPlans || []);
       this.writeTable('feedLogs', data.feedLogs || []);
+      this.writeTable('media', data.media || []);
       return true;
     } catch (error) {
       console.error('Error importing data:', error);
@@ -261,6 +401,7 @@ class DatabaseService {
       this.writeTable('feeds', []);
       this.writeTable('feedPlans', []);
       this.writeTable('feedLogs', []);
+      this.writeTable('media', []);
       return true;
     } catch (error) {
       console.error('Error clearing data:', error);

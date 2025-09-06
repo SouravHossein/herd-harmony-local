@@ -64,7 +64,7 @@ export default function GoatHealthHistory({ goat, healthRecords }: GoatHealthHis
     return Math.floor(ageMs / (1000 * 60 * 60 * 24 * 30.44)); // months
   };
 
-  const vaccinationSchedule = healthAI.getVaccinationSchedule(calculateAge(goat.dateOfBirth));
+  const vaccinationSchedule = healthAI.getVaccinationSchedule(calculateAge(goat.birthDate));
   const healthReport = healthAI.generateHealthReport(goat.id, healthRecords);
 
   // Group records by year/month

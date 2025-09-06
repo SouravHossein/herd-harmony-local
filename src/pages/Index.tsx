@@ -11,6 +11,7 @@ import { WeatherDashboard } from '@/components/weather/WeatherDashboard';
 import Settings from '@/components/Settings';
 import { WeightTracking } from '@/components/weight/WeightTracking';
 import { GoatManagement } from '@/components/goats/GoatManagement';
+import PedigreeWrapper from '@/components/pedigree/PedigreeWrapper';
 
 export default function Index() {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -25,7 +26,7 @@ export default function Index() {
       case 'weight':
         return <WeightTracking />;
       case 'pedigree':
-        return 
+        return <PedigreeWrapper />; 
       case 'breeding':
         return <BreedingPlanner />;
       case 'finance':

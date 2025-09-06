@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useCallback, useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,14 +16,19 @@ import {
   Star,
   Baby,
   FileText,
-  Activity
+  Activity,
+  Dna
 } from 'lucide-react';
-import { Goat, WeightRecord, HealthRecord } from '@/types/goat';
+import { Goat, WeightRecord, HealthRecord, BreedingRecord } from '@/types/goat';
 import { InteractiveGeneralTab } from './InteractiveGeneralTab';
 import { InteractiveWeightTab } from './InteractiveWeightTab';
 import { InteractiveHealthTab } from './InteractiveHealthTab';
 import { InteractiveBreedingTab } from './InteractiveBreedingTab';
 import { InteractiveMediaTab } from './InteractiveMediaTab';
+import PedigreeAnalyzer from '../pedigree/PedigreeAnalyzer';
+import FullPedigreeTree from '../pedigree/FullPedigreeTree'; // Import the new component
+import { useGoatContext } from '@/context/GoatContext';
+import { MediaFile } from '@/types/media';
 
 interface InteractiveGoatProfileProps {
   goat: Goat | null;
@@ -37,6 +43,12 @@ interface InteractiveGoatProfileProps {
   onAddHealthRecord?: (goatId: string, record: Omit<HealthRecord, 'id'>) => void;
   onUpdateHealthRecord?: (recordId: string, record: Partial<HealthRecord>) => void;
   onDeleteHealthRecord?: (recordId: string) => void;
+  allGoats: Goat[];
+  breedingRecords: BreedingRecord[];
+  onAddBreeding?: (data: any) => void;
+  onUpdateBreeding?: (recordId: string, data: any) => void;
+  onDeleteBreeding?: (recordId: string) => void;
+
 }
 
 export default function InteractiveGoatProfile({ 
@@ -51,12 +63,30 @@ export default function InteractiveGoatProfile({
   onDeleteWeight,
   onAddHealthRecord,
   onUpdateHealthRecord,
-  onDeleteHealthRecord
+  onDeleteHealthRecord,
+  allGoats,
+  breedingRecords,
+  onAddBreeding,
+  onUpdateBreeding,
+  onDeleteBreeding,
+
 }: InteractiveGoatProfileProps) {
+  const { getMediaByGoatId } = useGoatContext();
   const [activeTab, setActiveTab] = useState('general');
-
+  const [isFullPedigreeOpen, setFullPedigreeOpen] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const refreshMedia = useCallback(async () => {
+    try {
+      const media = await getMediaByGoatId(goat?.id) || [];
+      setMediaFiles(media);
+      setActiveTab('media');
+    } catch (e) {
+      console.error('refreshMedia', e);
+    }
+  }, [goat?.id, getMediaByGoatId]);
+  
+  useEffect(() => { refreshMedia(); }, [refreshMedia]);
   if (!goat) return null;
-
   const calculateAge = (birthDate: Date): string => {
     const now = new Date();
     const ageMs = now.getTime() - (new Date(birthDate)).getTime();
@@ -80,9 +110,9 @@ export default function InteractiveGoatProfile({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                {goat.mediaFiles?.find(m => m.type === 'image') ? (
+                {mediaFiles.find(m => m.type === 'image' && m.primary==true) ? (
                   <img
-                    src={goat.mediaFiles.find(m => m.type === 'image')!.url}
+                    src={mediaFiles.find(m => m.type === 'image' && m.primary==true)!.url}
                     alt={goat.name}
                     className="w-12 h-12 object-cover rounded-full border-2 border-primary"
                   />
@@ -127,37 +157,41 @@ export default function InteractiveGoatProfile({
               <p className="text-xs text-muted-foreground">Health Records</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{goat.mediaFiles?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Media Files</p>
-            </div>
-            <div className="text-center">
               <p className="text-2xl font-bold text-primary">{goatWeightRecords.length}</p>
               <p className="text-xs text-muted-foreground">Weight Records</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-primary">{mediaFiles.length}</p>
+              <p className="text-xs text-muted-foreground">Media Files</p>
             </div>
           </div>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="general" className="flex items-center space-x-1">
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline">General</span>
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="general">
+              <User className="h-4 w-4 mr-1" />
+              General
             </TabsTrigger>
-            <TabsTrigger value="weight" className="flex items-center space-x-1">
-              <Weight className="h-4 w-4" />
-              <span className="hidden sm:inline">Weight</span>
+            <TabsTrigger value="pedigree">
+              <Dna className="h-4 w-4 mr-1" />
+              Pedigree
             </TabsTrigger>
-            <TabsTrigger value="health" className="flex items-center space-x-1">
-              <Stethoscope className="h-4 w-4" />
-              <span className="hidden sm:inline">Health & AI</span>
+            <TabsTrigger value="weight">
+              <Weight className="h-4 w-4 mr-1" />
+              Weight
             </TabsTrigger>
-            <TabsTrigger value="breeding" className="flex items-center space-x-1">
-              <Baby className="h-4 w-4" />
-              <span className="hidden sm:inline">Breeding</span>
+            <TabsTrigger value="health">
+              <Stethoscope className="h-4 w-4 mr-1" />
+              Health & AI
             </TabsTrigger>
-            <TabsTrigger value="media" className="flex items-center space-x-1">
-              <Camera className="h-4 w-4" />
-              <span className="hidden sm:inline">Media</span>
+            <TabsTrigger value="breeding">
+              <Baby className="h-4 w-4 mr-1" />
+              Breeding
+            </TabsTrigger>
+            <TabsTrigger value="media">
+              <Camera className="h-4 w-4 mr-1" />
+              Media
             </TabsTrigger>
           </TabsList>
 
@@ -187,15 +221,50 @@ export default function InteractiveGoatProfile({
             </TabsContent>
 
             <TabsContent value="breeding" className="space-y-6">
-              <InteractiveBreedingTab goat={goat} />
+              <InteractiveBreedingTab 
+                goat={goat}
+                allGoats={allGoats} 
+                breedingRecords={breedingRecords}
+                onAddBreeding={onAddBreeding}
+                onUpdateBreeding={onUpdateBreeding}
+                onDeleteBreeding={onDeleteBreeding}
+              />
             </TabsContent>
 
-            <TabsContent value="media" className="space-y-6">
-              <InteractiveMediaTab goat={goat} />
+            <TabsContent value="pedigree" className="h-[60vh]">
+              <div className="flex flex-col h-full">
+                <div className="flex-shrink-0 mb-4">
+                    <Button onClick={() => setFullPedigreeOpen(true)}>
+                        <Dna className="h-4 w-4 mr-2" />
+                        View Full Lineage
+                    </Button>
+                </div>
+                <div className="flex-grow">
+                    <PedigreeAnalyzer initialGoatId={goat.id} />
+                </div>
+              </div>
+              {isFullPedigreeOpen && (
+          <Dialog open={isFullPedigreeOpen} onOpenChange={setFullPedigreeOpen}>
+            <DialogContent className="max-w-7xl h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>Full Pedigree Lineage</DialogTitle>
+              </DialogHeader>
+              <div className="h-full w-full">
+                <FullPedigreeTree rootGoatId={goat.id} />
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+            </TabsContent>
+
+             <TabsContent value="media" className="space-y-6">
+              <InteractiveMediaTab goat={goat} onMediaUpdate={refreshMedia} />
             </TabsContent>
           </div>
         </Tabs>
+
       </DialogContent>
     </Dialog>
   );
 }
+

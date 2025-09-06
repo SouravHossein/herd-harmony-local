@@ -87,7 +87,7 @@ export function HealthRecordForm({
     if (!goat) return [];
     
     const ageInMonths = Math.floor(
-      (new Date().getTime() - new Date(goat.dateOfBirth).getTime()) / 
+      (new Date().getTime() - new Date(goat.birthDate).getTime()) / 
       (1000 * 60 * 60 * 24 * 30)
     );
     
@@ -162,6 +162,18 @@ export function HealthRecordForm({
             name="medicine" 
             placeholder="e.g., CDT Vaccine, Ivermectin"
             defaultValue={initialData?.medicine}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="cost">Cost</Label>
+          <Input 
+            id="cost" 
+            name="cost" 
+            type="number"
+            step="0.01"
+            placeholder="e.g., 25.50"
+            defaultValue={initialData?.cost}
           />
         </div>
       </div>

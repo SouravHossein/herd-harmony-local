@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Plus, BarChart3, TrendingUp, Calendar } from 'lucide-react';
+import { Plus, BarChart3, TrendingUp, Calendar, Edit, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,9 @@ interface FeedUsageProps {
   feedPlans: FeedPlan[];
   feedLogs: FeedLog[];
   goats: Goat[];
-  onAddFeedLog: (log: Omit<FeedLog, 'id' | 'createdAt'>) => void;
+  onAddFeedLog: (log: Omit<FeedLog, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onUpdateFeedLog: (id: string, updates: Partial<FeedLog>) => void;
+  onDeleteFeedLog: (id: string) => void;
 }
 
 export const FeedUsage: React.FC<FeedUsageProps> = ({
@@ -23,7 +26,9 @@ export const FeedUsage: React.FC<FeedUsageProps> = ({
   feedPlans,
   feedLogs,
   goats,
-  onAddFeedLog
+  onAddFeedLog,
+  onUpdateFeedLog,
+  onDeleteFeedLog
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -31,8 +36,12 @@ export const FeedUsage: React.FC<FeedUsageProps> = ({
     feedId: '',
     date: new Date().toISOString().split('T')[0],
     amountUsed: 0,
+    unit: 'kg',
     notes: ''
   });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedFeedLog, setSelectedFeedLog] = useState<FeedLog | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<FeedLog>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +62,43 @@ export const FeedUsage: React.FC<FeedUsageProps> = ({
       feedId: '',
       date: new Date().toISOString().split('T')[0],
       amountUsed: 0,
+      unit: 'kg',
       notes: ''
     });
+  };
+
+  const handleEditFeedLog = (log: FeedLog) => {
+    setSelectedFeedLog(log);
+    setEditFormData({
+      goatId: log.goatId,
+      feedId: log.feedId,
+      date: new Date(log.date)[0],
+      amountUsed: log.amountUsed, // Use 'amount' from FeedLog type
+      notes: log.notes
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateFeedLog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFeedLog) return;
+
+    const feed = feeds.find(f => f.id === editFormData.feedId);
+    const cost = feed ? feed.costPerKg * (editFormData.amountUsed || 0) : 0;
+
+    await onUpdateFeedLog(selectedFeedLog.id, {
+      ...editFormData,
+      date: editFormData.date ? new Date(editFormData.date) : undefined,
+      amountUsed: editFormData.amountUsed,
+      cost,
+    });
+    setIsEditDialogOpen(false);
+    setSelectedFeedLog(null);
+    setEditFormData({});
+  };
+
+  const handleDeleteFeedLog = (id: string) => {
+    onDeleteFeedLog(id);
   };
 
   // Calculate analytics data
@@ -269,6 +313,7 @@ export const FeedUsage: React.FC<FeedUsageProps> = ({
       </div>
 
       {/* Recent Usage Logs */}
+      {/* Recent Usage Logs */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Usage Logs</CardTitle>
@@ -288,9 +333,17 @@ export const FeedUsage: React.FC<FeedUsageProps> = ({
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">{log.amountUsed} kg</p>
-                    <p className="text-sm text-muted-foreground">${log.cost.toFixed(2)}</p>
+                  <div className="text-right flex items-center space-x-2">
+                    <div>
+                      <p className="font-medium">{log.amountUsed} kg</p>
+                      <p className="text-sm text-muted-foreground">${log.cost.toFixed(2)}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleEditFeedLog(log)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteFeedLog(log.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               );
@@ -298,6 +351,91 @@ export const FeedUsage: React.FC<FeedUsageProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Feed Usage Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Feed Usage</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateFeedLog} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="editGoatId">Goat</Label>
+                <Select 
+                  value={editFormData.goatId} 
+                  onValueChange={(value) => setEditFormData({...editFormData, goatId: value})}
+                >
+                  <SelectTrigger id="editGoatId">
+                    <SelectValue placeholder="Select goat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {goats.filter(g => g.status === 'active').map(goat => (
+                      <SelectItem key={goat.id} value={goat.id}>
+                        {goat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="editFeedId">Feed</Label>
+                <Select 
+                  value={editFormData.feedId} 
+                  onValueChange={(value) => setEditFormData({...editFormData, feedId: value})}
+                >
+                  <SelectTrigger id="editFeedId">
+                    <SelectValue placeholder="Select feed" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {feeds.map(feed => (
+                      <SelectItem key={feed.id} value={feed.id}>
+                        {feed.name} (${feed.costPerKg}/kg)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="editDate">Date</Label>
+                <Input
+                  type="date"
+                  id="editDate"
+                  value={editFormData.date ? format(new Date(editFormData.date), 'yyyy-MM-dd') : ''}
+                  onChange={(e) => setEditFormData({...editFormData, date: new Date(e.target.value)})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="editAmount">Amount Used (kg)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  id="editAmount"
+                  value={editFormData.amountUsed || 0}
+                  onChange={(e) => setEditFormData({...editFormData, amountUsed: parseFloat(e.target.value)})}
+                  required
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="editNotes">Notes (Optional)</Label>
+                <Input
+                  id="editNotes"
+                  value={editFormData.notes || ''}
+                  onChange={(e) => setEditFormData({...editFormData, notes: e.target.value})}
+                  placeholder="Additional notes..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Update Usage</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
