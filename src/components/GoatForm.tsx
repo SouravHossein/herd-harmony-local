@@ -37,7 +37,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
     notes: '',
     fatherId: undefined as string | undefined,
     motherId: undefined as string | undefined,
-    mediaFiles: [] as MediaFile[],
+    // mediaFiles: [] as MediaFile[],
   });
 
   const [pedigreeValidation, setPedigreeValidation] = useState<{
@@ -60,7 +60,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
         notes: goat.notes || '',
         fatherId: goat.fatherId,
         motherId: goat.motherId,
-        mediaFiles: goat.mediaFiles || [],
+        // mediaFiles: goat.mediaFiles || [],
       });
     } else {
       setFormData({
@@ -75,7 +75,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
         notes: '',
         fatherId: undefined,
         motherId: undefined,
-        mediaFiles: [],
+        // mediaFiles: [],
       });
     }
   }, [goat]);
@@ -287,7 +287,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
           </Card>
 
           {/* Media Gallery */}
-          <MediaGallery
+          {/* <MediaGallery
             mediaFiles={formData.mediaFiles.filter(file => file.type === "image" || file.type === "video")}
             onMediaChange={(files) => setFormData({ 
               ...formData, 
@@ -297,7 +297,7 @@ export default function GoatForm({ goat, isOpen, onClose, onSubmit }: GoatFormPr
               }))
             })}
             config={mediaConfig}
-          />
+          /> */}
 
           {/* Parentage Information */}
           <Card>

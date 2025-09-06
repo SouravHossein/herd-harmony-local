@@ -461,6 +461,7 @@ export function GoatManagement() {
         onAddBreeding={addBreedingRecord}
         onUpdateBreeding={updateBreedingRecord}
         onDeleteBreeding={deleteBreedingRecord}
+        thumbnailUrl={thumbnails.find(t => t.goatId === selectedGoat?.id)?.thumbnailUrl}
       />
     </div>
   );

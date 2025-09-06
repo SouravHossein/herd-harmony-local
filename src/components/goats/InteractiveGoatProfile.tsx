@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
 import { 
   User, 
   Calendar, 
@@ -48,6 +49,7 @@ interface InteractiveGoatProfileProps {
   onAddBreeding?: (data: any) => void;
   onUpdateBreeding?: (recordId: string, data: any) => void;
   onDeleteBreeding?: (recordId: string) => void;
+  thumbnailUrl?: string;
 
 }
 
@@ -69,23 +71,14 @@ export default function InteractiveGoatProfile({
   onAddBreeding,
   onUpdateBreeding,
   onDeleteBreeding,
+  thumbnailUrl
 
 }: InteractiveGoatProfileProps) {
   const { getMediaByGoatId } = useGoatContext();
   const [activeTab, setActiveTab] = useState('general');
   const [isFullPedigreeOpen, setFullPedigreeOpen] = useState(false);
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
-  const refreshMedia = useCallback(async () => {
-    try {
-      const media = await getMediaByGoatId(goat?.id) || [];
-      setMediaFiles(media);
-      setActiveTab('media');
-    } catch (e) {
-      console.error('refreshMedia', e);
-    }
-  }, [goat?.id, getMediaByGoatId]);
-  
-  useEffect(() => { refreshMedia(); }, [refreshMedia]);
+
+
   if (!goat) return null;
   const calculateAge = (birthDate: Date): string => {
     const now = new Date();
@@ -110,9 +103,9 @@ export default function InteractiveGoatProfile({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                {mediaFiles.find(m => m.type === 'image' && m.primary==true) ? (
+                {thumbnailUrl ? (
                   <img
-                    src={mediaFiles.find(m => m.type === 'image' && m.primary==true)!.url}
+                    src={thumbnailUrl}
                     alt={goat.name}
                     className="w-12 h-12 object-cover rounded-full border-2 border-primary"
                   />
@@ -160,10 +153,7 @@ export default function InteractiveGoatProfile({
               <p className="text-2xl font-bold text-primary">{goatWeightRecords.length}</p>
               <p className="text-xs text-muted-foreground">Weight Records</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary">{mediaFiles.length}</p>
-              <p className="text-xs text-muted-foreground">Media Files</p>
-            </div>
+            
           </div>
         </DialogHeader>
 
@@ -258,7 +248,7 @@ export default function InteractiveGoatProfile({
             </TabsContent>
 
              <TabsContent value="media" className="space-y-6">
-              <InteractiveMediaTab goat={goat} onMediaUpdate={refreshMedia} />
+              <InteractiveMediaTab goat={goat} setActiveTab={setActiveTab} />
             </TabsContent>
           </div>
         </Tabs>
